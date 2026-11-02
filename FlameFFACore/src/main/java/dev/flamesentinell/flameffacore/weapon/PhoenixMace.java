@@ -77,20 +77,20 @@ public final class PhoenixMace implements CustomWeapon, Listener {
 
    @Override
    public boolean onAbility(FlameFFACore plugin, Player player, ItemStack held) {
-      if (this.anchors.containsKey(player.getUniqueId())) {
+      int seconds = Math.max(1, plugin.configs().main().getInt(this.path() + ".duration-seconds", 10));
+      PhoenixMace.Anchor anchor = new PhoenixMace.Anchor(
+         player.getLocation().clone(), player.getHealth(), player.getFoodLevel(), player.getSaturation(), Bukkit.getCurrentTick() + seconds * 20
+      );
+      PhoenixMace.Anchor prev = this.anchors.putIfAbsent(player.getUniqueId(), anchor);
+      if (prev != null) {
          return false;
-      } else {
-         int seconds = Math.max(1, plugin.configs().main().getInt(this.path() + ".duration-seconds", 10));
-         PhoenixMace.Anchor anchor = new PhoenixMace.Anchor(
-            player.getLocation().clone(), player.getHealth(), player.getFoodLevel(), player.getSaturation(), Bukkit.getCurrentTick() + seconds * 20
-         );
-         this.anchors.put(player.getUniqueId(), anchor);
-         World world = anchor.at.getWorld();
-         world.playSound(anchor.at, Sound.ITEM_FIRECHARGE_USE, 1.0F, 0.7F);
-         world.playSound(anchor.at, Sound.ENTITY_BLAZE_AMBIENT, 0.8F, 1.4F);
-         this.mark(plugin, player, anchor, seconds * 20);
-         return true;
       }
+
+      World world = anchor.at.getWorld();
+      world.playSound(anchor.at, Sound.ITEM_FIRECHARGE_USE, 1.0F, 0.7F);
+      world.playSound(anchor.at, Sound.ENTITY_BLAZE_AMBIENT, 0.8F, 1.4F);
+      this.mark(plugin, player, anchor, seconds * 20);
+      return true;
    }
 
    private void mark(FlameFFACore plugin, Player player, PhoenixMace.Anchor anchor, int ticks) {
