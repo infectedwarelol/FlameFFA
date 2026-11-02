@@ -168,7 +168,7 @@ public final class ProtectionListener implements Listener {
          Block var2 = var1.getBlock();
          if (this.listed("buckets", var1.getBucket()) && this.allowedHere(var1.getPlayer(), var2.getLocation())) {
             Block var3 = var1.getBlockClicked().getRelative(var1.getBlockFace());
-            Bukkit.getScheduler().runTask(this.plugin, () -> {
+            this.plugin.tasks().region(var2.getLocation(), () -> {
                for (Block var6 : new Block[]{var2, var3}) {
                   if (var6.getType() == Material.WATER) {
                      this.plugin.sweeper().placed(var6);
@@ -233,7 +233,7 @@ public final class ProtectionListener implements Listener {
    public void onIgnite(BlockIgniteEvent var1) {
       if (var1.getCause() == IgniteCause.FLINT_AND_STEEL && var1.getPlayer() != null) {
          Block var2 = var1.getBlock();
-         Bukkit.getScheduler().runTask(this.plugin, () -> {
+         this.plugin.tasks().region(var2.getLocation(), () -> {
             if (var2.getType() == Material.FIRE || var2.getType() == Material.SOUL_FIRE) {
                this.plugin.sweeper().placed(var2);
             }

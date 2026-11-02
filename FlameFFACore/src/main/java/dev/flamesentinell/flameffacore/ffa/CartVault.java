@@ -9,10 +9,9 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.StandardCopyOption;
-import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ExecutorService;
@@ -43,8 +42,8 @@ public final class CartVault implements Listener {
    private static CartVault instance;
    private final FlameFFACore plugin;
    private final File dir;
-   private final Map<UUID, Inventory> open = new HashMap<>();
-   private final Set<UUID> dirty = new HashSet<>();
+   private final Map<UUID, Inventory> open = new ConcurrentHashMap<>();
+   private final Set<UUID> dirty = ConcurrentHashMap.newKeySet();
    private final ExecutorService io = Executors.newSingleThreadExecutor(var0 -> {
       Thread var1x = new Thread(var0, "FlameFFACore cart vault");
       var1x.setDaemon(true);
@@ -209,14 +208,10 @@ public final class CartVault implements Listener {
 
    private void touch(UUID var1) {
       if (this.dirty.add(var1)) {
-         Bukkit.getScheduler().runTask(this.plugin, () -> {
-            Player var2 = Bukkit.getPlayer(var1);
-            if (var2 != null) {
-               this.save(var2);
-            } else {
-               this.dirty.remove(var1);
-            }
-         });
+         Player var2 = Bukkit.getPlayer(var1);
+         if (var2 == null || this.plugin.tasks().entity(var2, () -> this.save(var2)) == null) {
+            this.dirty.remove(var1);
+         }
       }
    }
 

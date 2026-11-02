@@ -9,11 +9,10 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.StandardCopyOption;
-import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ExecutorService;
@@ -25,6 +24,7 @@ import org.bukkit.Material;
 import org.bukkit.OfflinePlayer;
 import org.bukkit.Sound;
 import org.bukkit.entity.HumanEntity;
+import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
@@ -51,8 +51,8 @@ public final class EnderVault implements Listener {
    private static EnderVault instance;
    private final FlameFFACore plugin;
    private final File dir;
-   private final Map<UUID, Inventory> open = new HashMap<>();
-   private final Set<UUID> dirty = new HashSet<>();
+   private final Map<UUID, Inventory> open = new ConcurrentHashMap<>();
+   private final Set<UUID> dirty = ConcurrentHashMap.newKeySet();
    private final ExecutorService io = Executors.newSingleThreadExecutor(var0 -> {
       Thread var1x = new Thread(var0, "FlameFFACore ender vault");
       var1x.setDaemon(true);
@@ -190,7 +190,7 @@ public final class EnderVault implements Listener {
          byte[] var3 = ItemStack.serializeItemsAsBytes(var2.getContents());
          Player var4 = Bukkit.getPlayer(var1);
          if (var4 != null) {
-            var4.saveData();
+            this.plugin.tasks().runOn(var4, var4::saveData);
          }
 
          File var5 = this.file(var1);
@@ -208,9 +208,11 @@ public final class EnderVault implements Listener {
       }
    }
 
-   private void touch(UUID var1) {
+   private void touch(UUID var1, Entity viewer) {
       if (this.dirty.add(var1)) {
-         Bukkit.getScheduler().runTask(this.plugin, () -> this.save(var1));
+         if (this.plugin.tasks().entity(viewer, () -> this.save(var1)) == null) {
+            this.dirty.remove(var1);
+         }
       }
    }
 
@@ -248,7 +250,7 @@ public final class EnderVault implements Listener {
                say(var6, "<red>Kit items can not go in your ender chest.");
             }
          } else {
-            this.touch(var3);
+            this.touch(var3, var1.getWhoClicked());
          }
       }
    }
@@ -265,7 +267,7 @@ public final class EnderVault implements Listener {
          if (var4 && this.kit(var1.getOldCursor())) {
             var1.setCancelled(true);
          } else {
-            this.touch(var3);
+            this.touch(var3, var1.getWhoClicked());
          }
       }
    }
@@ -317,7 +319,7 @@ public final class EnderVault implements Listener {
 
          Player var7 = var6;
          if (var7 != null && var7 != var2) {
-            Bukkit.getScheduler().runTask(this.plugin, () -> {
+            this.plugin.tasks().entity(var2, () -> {
                try {
                   var2.openInventory(this.vault(var7));
                } catch (IllegalStateException var4) {
@@ -325,7 +327,7 @@ public final class EnderVault implements Listener {
                }
             });
          } else {
-            Bukkit.getScheduler().runTask(this.plugin, () -> this.show(var2));
+            this.plugin.tasks().entity(var2, () -> this.show(var2));
          }
       }
    }

@@ -31,17 +31,24 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.BlockFromToEvent;
-import org.bukkit.scheduler.BukkitTask;
+import org.bukkit.event.entity.EntitySpawnEvent;
+import com.destroystokyo.paper.event.entity.EntityRemoveFromWorldEvent;
+import io.papermc.paper.threadedregions.scheduler.ScheduledTask;
+import dev.flamesentinell.flameffacore.util.Tasks;
+import java.util.Collections;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicInteger;
 
 public final class ArenaSweeper implements Listener {
    private final FlameFFACore plugin;
-   private final Set<Location> placed = new LinkedHashSet<>();
-   private final Map<Location, BlockData> broken = new LinkedHashMap<>();
-   private BukkitTask task;
-   private int left;
-   private final Map<Location, BlockData> lights = new LinkedHashMap<>();
-   private BukkitTask lightTask;
-   private final Set<Location> logged = new LinkedHashSet<>();
+   private final Set<Location> placed = Collections.synchronizedSet(new LinkedHashSet<>());
+   private final Map<Location, BlockData> broken = Collections.synchronizedMap(new LinkedHashMap<>());
+   private ScheduledTask task;
+   private volatile int left;
+   private final Map<Location, BlockData> lights = Collections.synchronizedMap(new LinkedHashMap<>());
+   private ScheduledTask lightTask;
+   private final Set<Location> logged = Collections.synchronizedSet(new LinkedHashSet<>());
+   private final Set<Entity> drops = ConcurrentHashMap.newKeySet();
    private static final BlockFace[] SIDES = new BlockFace[]{BlockFace.UP, BlockFace.DOWN, BlockFace.NORTH, BlockFace.SOUTH, BlockFace.EAST, BlockFace.WEST};
    private static final int ORPHAN_CAP = 4096;
 
@@ -69,14 +76,39 @@ public final class ArenaSweeper implements Listener {
 
       this.placed.add(var3);
       if (var2.getMaterial() == Material.LIGHT) {
-         this.lights.putIfAbsent(var3, var2.clone());
-         this.watchLights();
+         if (this.lights.putIfAbsent(var3, var2.clone()) == null && Tasks.FOLIA) {
+            this.watchLight(var3);
+         } else if (!Tasks.FOLIA) {
+            this.watchLights();
+         }
       }
    }
 
-   private void watchLights() {
+   private void watchLight(Location at) {
+      this.plugin.tasks().regionTimer(at, task -> {
+         BlockData original = this.lights.get(at);
+         if (original == null) {
+            task.cancel();
+         } else {
+            Block block = at.getBlock();
+            if (block.getType() == Material.LIGHT) {
+               this.lights.remove(at);
+               task.cancel();
+            } else if (block.getType().isAir()) {
+               block.setBlockData(original, false);
+               this.placed.remove(at);
+               this.broken.remove(at);
+               this.lights.remove(at);
+               task.cancel();
+            }
+         }
+      }, 5L, 5L);
+   }
+
+   private synchronized void watchLights() {
       if (this.lightTask == null) {
-         this.lightTask = Bukkit.getScheduler().runTaskTimer(this.plugin, () -> {
+         this.lightTask = this.plugin.tasks().globalTimer(task -> {
+            synchronized (this.lights) {
             Iterator var1 = this.lights.entrySet().iterator();
 
             while (var1.hasNext()) {
@@ -91,10 +123,13 @@ public final class ArenaSweeper implements Listener {
                   var1.remove();
                }
             }
+            }
 
-            if (this.lights.isEmpty() && this.lightTask != null) {
-               this.lightTask.cancel();
-               this.lightTask = null;
+            if (this.lights.isEmpty()) {
+               task.cancel();
+               synchronized (this) {
+                  this.lightTask = null;
+               }
             }
          }, 5L, 5L);
       }
@@ -121,7 +156,7 @@ public final class ArenaSweeper implements Listener {
       this.stop();
       this.left = this.seconds();
       if (this.left > 0) {
-         this.task = Bukkit.getScheduler().runTaskTimer(this.plugin, () -> {
+         this.task = this.plugin.tasks().globalTimer(task -> {
             this.left--;
             int var1 = this.plugin.configs().main().getInt("sweep.warn-seconds", 10);
             if (this.left == var1 && var1 > 0) {
@@ -129,7 +164,12 @@ public final class ArenaSweeper implements Listener {
             }
 
             if (this.left <= 0) {
-               this.sweep(true);
+               if (Tasks.FOLIA) {
+                  this.sweepRegions(true);
+               } else {
+                  this.sweep(true);
+               }
+
                this.left = this.seconds();
             }
          }, 20L, 20L);
@@ -147,12 +187,150 @@ public final class ArenaSweeper implements Listener {
       return this.plugin.configs().main().getInt("sweep.seconds", 180);
    }
 
+   @EventHandler(
+      priority = EventPriority.MONITOR,
+      ignoreCancelled = true
+   )
+   public void onDropSpawn(EntitySpawnEvent event) {
+      if (Tasks.FOLIA && sweepable(event.getEntity())) {
+         this.drops.add(event.getEntity());
+      }
+   }
+
+   @EventHandler
+   public void onDropGone(EntityRemoveFromWorldEvent event) {
+      if (!this.drops.isEmpty()) {
+         this.drops.remove(event.getEntity());
+      }
+   }
+
+   private static boolean sweepable(Entity entity) {
+      return entity instanceof Item || entity instanceof ExperienceOrb || entity instanceof AbstractArrow arrow && !(arrow instanceof Trident);
+   }
+
+   public int sweepRegions(boolean announce) {
+      FileConfiguration cfg = this.plugin.configs().main();
+      AtomicInteger blocks = new AtomicInteger();
+      AtomicInteger items = new AtomicInteger();
+      List<ArenaSweeper.Job> jobs = new ArrayList<>();
+      if (cfg.getBoolean("sweep.blocks", true)) {
+         List<Location> cleared;
+         synchronized (this.placed) {
+            cleared = new ArrayList<>(this.placed);
+            this.placed.clear();
+         }
+
+         Set<Location> waterlogged;
+         synchronized (this.logged) {
+            waterlogged = new HashSet<>(this.logged);
+            this.logged.clear();
+         }
+
+         Map<Location, BlockData> restore;
+         synchronized (this.broken) {
+            restore = new LinkedHashMap<>(this.broken);
+            this.broken.clear();
+         }
+
+         for (Location at : cleared) {
+            jobs.add(new ArenaSweeper.Job(at, null, () -> {
+               if (this.clear(at.getBlock(), waterlogged.contains(at))) {
+                  blocks.incrementAndGet();
+               }
+
+               blocks.addAndGet(this.orphans(List.of(at), 0));
+            }));
+         }
+
+         for (Entry<Location, BlockData> entry : restore.entrySet()) {
+            jobs.add(new ArenaSweeper.Job(entry.getKey(), null, () -> {
+               entry.getKey().getBlock().setBlockData(entry.getValue(), false);
+               blocks.incrementAndGet();
+            }));
+         }
+
+         int radius = cfg.getInt("sweep.orphan-scan-radius", 16);
+         if (radius > 0) {
+            for (Player player : this.plugin.arena().spawn().getWorld().getPlayers()) {
+               if (!player.getScoreboardTags().contains("smbot_bot")) {
+                  jobs.add(new ArenaSweeper.Job(null, player, () -> blocks.addAndGet(this.orphansAround(player, radius))));
+               }
+            }
+         }
+      }
+
+      if (cfg.getBoolean("sweep.items", true)) {
+         for (Entity drop : new ArrayList<>(this.drops)) {
+            this.drops.remove(drop);
+            jobs.add(new ArenaSweeper.Job(null, drop, () -> {
+               if (drop.isValid()) {
+                  drop.remove();
+                  items.incrementAndGet();
+               }
+            }));
+         }
+      }
+
+      AtomicInteger pending = new AtomicInteger(jobs.size());
+      Runnable finish = () -> {
+         if (pending.decrementAndGet() == 0 && announce && (blocks.get() > 0 || items.get() > 0)) {
+            Bukkit.broadcast(this.plugin.configs().msg("sweep.done", "blocks", String.valueOf(blocks.get()), "items", String.valueOf(items.get())));
+         }
+      };
+
+      for (ArenaSweeper.Job job : jobs) {
+         Runnable wrapped = () -> {
+            try {
+               job.work().run();
+            } finally {
+               finish.run();
+            }
+         };
+         ScheduledTask scheduled = job.at() != null ? this.plugin.tasks().region(job.at(), wrapped) : this.plugin.tasks().entity(job.owner(), wrapped);
+         if (scheduled == null) {
+            finish.run();
+         }
+      }
+
+      return jobs.size();
+   }
+
+   private int orphansAround(Player player, int radius) {
+      World world = player.getWorld();
+      int half = Math.max(4, radius / 2);
+      int x = player.getLocation().getBlockX();
+      int y = player.getLocation().getBlockY();
+      int z = player.getLocation().getBlockZ();
+      List<Location> seeds = new ArrayList<>();
+
+      for (int bx = x - radius; bx <= x + radius; bx++) {
+         for (int bz = z - radius; bz <= z + radius; bz++) {
+            if (world.isChunkLoaded(bx >> 4, bz >> 4)) {
+               for (int by = Math.max(world.getMinHeight(), y - half); by <= Math.min(world.getMaxHeight() - 1, y + half); by++) {
+                  Block block = world.getBlockAt(bx, by, bz);
+                  if (flowing(block)) {
+                     seeds.add(block.getLocation());
+                  }
+               }
+            }
+         }
+      }
+
+      return seeds.isEmpty() ? 0 : this.orphans(seeds, 0);
+   }
+
+   private record Job(Location at, Entity owner, Runnable work) {
+   }
+
    public int sweep(boolean var1) {
       FileConfiguration var2 = this.plugin.configs().main();
       int var3 = 0;
       int var4 = 0;
       if (var2.getBoolean("sweep.blocks", true)) {
-         ArrayList<Location> var5 = new ArrayList<>(this.placed);
+         ArrayList<Location> var5;
+         synchronized (this.placed) {
+            var5 = new ArrayList<>(this.placed);
+         }
 
          for (Location var7 : var5) {
             if (this.clear(var7.getBlock())) {
@@ -163,9 +341,11 @@ public final class ArenaSweeper implements Listener {
          this.placed.clear();
          this.logged.clear();
 
-         for (Entry var12 : this.broken.entrySet()) {
-            ((Location)var12.getKey()).getBlock().setBlockData((BlockData)var12.getValue(), false);
-            var3++;
+         synchronized (this.broken) {
+            for (Entry var12 : this.broken.entrySet()) {
+               ((Location)var12.getKey()).getBlock().setBlockData((BlockData)var12.getValue(), false);
+               var3++;
+            }
          }
 
          this.broken.clear();
@@ -191,7 +371,11 @@ public final class ArenaSweeper implements Listener {
    }
 
    private boolean clear(Block var1) {
-      if (var1.getBlockData() instanceof Waterlogged var2 && var1.getType() != Material.WATER && this.logged.contains(var1.getLocation())) {
+      return this.clear(var1, this.logged.contains(var1.getLocation()));
+   }
+
+   private boolean clear(Block var1, boolean wasLogged) {
+      if (var1.getBlockData() instanceof Waterlogged var2 && var1.getType() != Material.WATER && wasLogged) {
          if (!var2.isWaterlogged()) {
             return false;
          } else {
@@ -323,6 +507,12 @@ public final class ArenaSweeper implements Listener {
 
    public void shutdown() {
       this.stop();
-      this.sweep(false);
+      Tasks.cancel(this.lightTask);
+      this.lightTask = null;
+      try {
+         this.sweep(false);
+      } catch (RuntimeException offThread) {
+         this.plugin.getSLF4JLogger().warn("arena sweep on shutdown was refused by the server, placed blocks stay until the next sweep");
+      }
    }
 }
