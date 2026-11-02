@@ -1,0 +1,14 @@
+name: FlameTrims
+version: 1.0.0
+main: dev.flamesentinell.flametrims.FlameTrims
+api-version: '1.21.11'
+author: flamesentinell
+description: armor trims that follow your armor slots
+commands:
+  trim:
+    description: pick the trim for each armor slot
+    aliases: [trims]
+    permission: flametrims.use
+permissions:
+  flametrims.use:
+    default: true
