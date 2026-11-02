@@ -13,6 +13,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.Set;
 import java.util.UUID;
 import java.util.Map.Entry;
@@ -45,8 +46,8 @@ public final class WeaponRegistry implements Listener {
    public static final String GROUND = "ground";
    private final FlameFFACore plugin;
    private final Map<String, CustomWeapon> weapons = new LinkedHashMap<>();
-   private final Map<UUID, WeaponRegistry.Hold> holds = new HashMap<>();
-   private final Set<UUID> fallImmune = new HashSet<>();
+   private final Map<UUID, WeaponRegistry.Hold> holds = new ConcurrentHashMap<>();
+   private final Set<UUID> fallImmune = ConcurrentHashMap.newKeySet();
 
    public WeaponRegistry(FlameFFACore var1) {
       this.plugin = var1;
@@ -217,39 +218,40 @@ public final class WeaponRegistry implements Listener {
    }
 
    public void tick() {
-      for (CustomWeapon var2 : this.weapons.values()) {
-         var2.tick(this.plugin);
+      for (CustomWeapon weapon : this.weapons.values()) {
+         weapon.tick(this.plugin);
       }
 
       if (!this.holds.isEmpty()) {
-         int var8 = Bukkit.getCurrentTick();
-         Iterator var9 = this.holds.entrySet().iterator();
+         this.holds.keySet().removeIf(uuid -> Bukkit.getPlayer(uuid) == null);
+      }
 
-         while (var9.hasNext()) {
-            Entry var3 = (Entry)var9.next();
-            WeaponRegistry.Hold var4 = (WeaponRegistry.Hold)var3.getValue();
-            Player var5 = Bukkit.getPlayer((UUID)var3.getKey());
-            if (var5 == null) {
-               var9.remove();
-            } else {
-               boolean var6 = var4.charges ? var8 - var4.started > 2 && !var5.isHandRaised() : var8 - var4.lastClick > 6;
-               boolean var7 = var8 - var4.started >= var4.weapon.maxHoldTicks(this.plugin);
-               if (var6 || var7 || var5.isDead() || var5.isOnGround()) {
-                  var9.remove();
-                  if (var4.weapon.onRelease(this.plugin, var5, !var5.isDead())) {
-                     this.exempt(var5);
-                     this.startCooldown(var5, var4.weapon);
-                  }
-               }
+      if (!this.fallImmune.isEmpty()) {
+         this.fallImmune.removeIf(uuid -> Bukkit.getPlayer(uuid) == null);
+      }
+   }
+
+   public void tick(Player player) {
+      for (CustomWeapon weapon : this.weapons.values()) {
+         weapon.tick(this.plugin, player);
+      }
+
+      UUID uuid = player.getUniqueId();
+      WeaponRegistry.Hold hold = this.holds.get(uuid);
+      if (hold != null) {
+         int now = Bukkit.getCurrentTick();
+         boolean released = hold.charges ? now - hold.started > 2 && !player.isHandRaised() : now - hold.lastClick > 6;
+         boolean maxed = now - hold.started >= hold.weapon.maxHoldTicks(this.plugin);
+         if ((released || maxed || player.isDead() || player.isOnGround()) && this.holds.remove(uuid, hold)) {
+            if (hold.weapon.onRelease(this.plugin, player, !player.isDead())) {
+               this.exempt(player);
+               this.startCooldown(player, hold.weapon);
             }
          }
       }
 
-      if (!this.fallImmune.isEmpty()) {
-         this.fallImmune.removeIf(var0 -> {
-            Player var1 = Bukkit.getPlayer(var0);
-            return var1 == null || var1.isOnGround() || var1.isInWater();
-         });
+      if (this.fallImmune.contains(uuid) && (player.isOnGround() || player.isInWater())) {
+         this.fallImmune.remove(uuid);
       }
    }
 

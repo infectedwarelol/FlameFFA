@@ -14,7 +14,6 @@ import org.bukkit.Particle.DustTransition;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
-import org.bukkit.scheduler.BukkitTask;
 import org.bukkit.util.Vector;
 
 public abstract class DashWeapon implements CustomWeapon {
@@ -40,9 +39,8 @@ public abstract class DashWeapon implements CustomWeapon {
       world.playSound(player.getLocation(), Sound.ENTITY_PHANTOM_FLAP, 1.0F, 1.35F);
       world.playSound(player.getLocation(), Sound.ENTITY_BREEZE_JUMP, 0.8F, 1.2F);
       world.playSound(player.getLocation(), Sound.ITEM_TRIDENT_RIPTIDE_1, 0.35F, 1.6F);
-      BukkitTask[] handle = new BukkitTask[1];
       int[] tick = new int[]{0};
-      handle[0] = Bukkit.getScheduler().runTaskTimer(plugin, () -> {
+      plugin.tasks().entityTimer(player, task -> {
          if (tick[0] < ticks && player.isOnline() && !player.isDead()) {
             double t = (double)tick[0] / Math.max(1, ticks - 1);
             player.setVelocity(dir.clone().multiply(speed * (1.0 - (1.0 - tail) * t)));
@@ -50,9 +48,9 @@ public abstract class DashWeapon implements CustomWeapon {
             this.wake(player, dir);
             tick[0]++;
          } else {
-            handle[0].cancel();
+            task.cancel();
          }
-      }, 0L, 1L);
+      }, null, 0L, 1L);
       return true;
    }
 

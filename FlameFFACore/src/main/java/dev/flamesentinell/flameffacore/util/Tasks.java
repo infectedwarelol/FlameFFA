@@ -9,6 +9,7 @@ import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.World;
 import org.bukkit.entity.Entity;
+import org.bukkit.event.player.PlayerTeleportEvent.TeleportCause;
 import org.bukkit.plugin.Plugin;
 
 public final class Tasks {
@@ -133,6 +134,22 @@ public final class Tasks {
          : this.track(
             Bukkit.getAsyncScheduler().runAtFixedRate(this.plugin, action, atLeastOne(delayTicks) * 50L, atLeastOne(periodTicks) * 50L, TimeUnit.MILLISECONDS)
          );
+   }
+
+   public static void move(Entity entity, Location to) {
+      if (FOLIA) {
+         entity.teleportAsync(to);
+      } else {
+         entity.teleport(to);
+      }
+   }
+
+   public static void move(Entity entity, Location to, TeleportCause cause) {
+      if (FOLIA) {
+         entity.teleportAsync(to, cause);
+      } else {
+         entity.teleport(to, cause);
+      }
    }
 
    public static void cancel(ScheduledTask task) {

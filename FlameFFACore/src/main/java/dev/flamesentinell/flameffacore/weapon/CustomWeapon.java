@@ -47,6 +47,9 @@ public interface CustomWeapon {
    default void tick(FlameFFACore plugin) {
    }
 
+   default void tick(FlameFFACore plugin, Player player) {
+   }
+
    default void demo(FlameFFACore plugin, Location at) {
    }
 

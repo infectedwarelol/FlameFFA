@@ -3,11 +3,11 @@ package dev.flamesentinell.flameffacore.weapon;
 import dev.flamesentinell.flameffacore.FlameFFACore;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import dev.flamesentinell.flameffacore.util.Tasks;
 import java.util.UUID;
-import java.util.Map.Entry;
 import org.bukkit.Bukkit;
 import org.bukkit.Color;
 import org.bukkit.Location;
@@ -29,7 +29,7 @@ import org.bukkit.event.entity.PlayerDeathEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.event.player.PlayerTeleportEvent.TeleportCause;
 import org.bukkit.inventory.ItemStack;
-import org.bukkit.scheduler.BukkitTask;
+import io.papermc.paper.threadedregions.scheduler.ScheduledTask;
 
 public final class PhoenixMace implements CustomWeapon, Listener {
    public static final String ID = "phoenix-mace";
@@ -39,7 +39,7 @@ public final class PhoenixMace implements CustomWeapon, Listener {
    private static final DustTransition EMBER = new DustTransition(Color.fromRGB(255, 224, 102), Color.fromRGB(179, 18, 10), 1.8F);
    private static final Color FLASH_GOLD = Color.fromRGB(255, 215, 74);
    private final FlameFFACore plugin;
-   private final Map<UUID, PhoenixMace.Anchor> anchors = new HashMap<>();
+   private final Map<UUID, PhoenixMace.Anchor> anchors = new ConcurrentHashMap<>();
 
    public PhoenixMace(FlameFFACore plugin) {
       this.plugin = plugin;
@@ -95,11 +95,11 @@ public final class PhoenixMace implements CustomWeapon, Listener {
    }
 
    private void mark(FlameFFACore plugin, Player player, PhoenixMace.Anchor anchor, int ticks) {
-      BukkitTask[] handle = new BukkitTask[1];
+      ScheduledTask[] handle = new ScheduledTask[1];
       int[] left = new int[]{ticks};
       Location c = anchor.at.clone().add(0.0, 0.1, 0.0);
       World world = c.getWorld();
-      handle[0] = Bukkit.getScheduler().runTaskTimer(plugin, () -> {
+      handle[0] = plugin.tasks().regionTimer(c, task -> {
          left[0] -= 2;
          if (left[0] >= 0 && this.anchors.get(player.getUniqueId()) == anchor) {
             double angle = left[0] * 0.25;
@@ -116,7 +116,7 @@ public final class PhoenixMace implements CustomWeapon, Listener {
                world.spawnParticle(Particle.END_ROD, c.clone().add(0.0, 1.2, 0.0), 1, 0.3, 0.6, 0.3, 0.0);
             }
          } else {
-            handle[0].cancel();
+            task.cancel();
          }
       }, 0L, 2L);
    }
@@ -124,18 +124,18 @@ public final class PhoenixMace implements CustomWeapon, Listener {
    @Override
    public void tick(FlameFFACore plugin) {
       if (!this.anchors.isEmpty()) {
-         int now = Bukkit.getCurrentTick();
-         Iterator<Entry<UUID, PhoenixMace.Anchor>> it = this.anchors.entrySet().iterator();
+         this.anchors.keySet().removeIf(uuid -> Bukkit.getPlayer(uuid) == null);
+      }
+   }
 
-         while (it.hasNext()) {
-            Entry<UUID, PhoenixMace.Anchor> e = it.next();
-            Player player = Bukkit.getPlayer(e.getKey());
-            if (player == null || player.isDead()) {
-               it.remove();
-            } else if (now >= e.getValue().until) {
-               it.remove();
-               this.rebirth(plugin, player, e.getValue());
-            }
+   @Override
+   public void tick(FlameFFACore plugin, Player player) {
+      PhoenixMace.Anchor anchor = this.anchors.get(player.getUniqueId());
+      if (anchor != null) {
+         if (player.isDead()) {
+            this.anchors.remove(player.getUniqueId(), anchor);
+         } else if (Bukkit.getCurrentTick() >= anchor.until && this.anchors.remove(player.getUniqueId(), anchor)) {
+            this.rebirth(plugin, player, anchor);
          }
       }
    }
@@ -146,39 +146,46 @@ public final class PhoenixMace implements CustomWeapon, Listener {
       to.setPitch(player.getLocation().getPitch());
       player.setFallDistance(0.0F);
       player.setFireTicks(0);
-      player.teleport(to, TeleportCause.PLUGIN);
-      AttributeInstance max = player.getAttribute(Attribute.MAX_HEALTH);
-      double cap = max == null ? 20.0 : max.getValue();
-      player.setHealth(Math.max(1.0, Math.min(cap, anchor.health)));
-      player.setFoodLevel(anchor.food);
-      player.setSaturation(anchor.saturation);
-      World world = to.getWorld();
-      Location at = to.clone().add(0.0, 1.0, 0.0);
-      world.spawnParticle(Particle.FLASH, at, 1, 0.0, 0.0, 0.0, 0.0, FLASH_GOLD);
-      world.spawnParticle(Particle.DUST_COLOR_TRANSITION, at, 120, 1.2, 1.0, 1.2, 0.0, EMBER);
-      world.spawnParticle(Particle.DUST, at, 60, 1.0, 0.8, 1.0, 0.0, GOLD);
-      world.spawnParticle(Particle.DUST, at, 40, 0.8, 0.8, 0.8, 0.0, ORANGE);
-      world.spawnParticle(Particle.FLAME, at, 80, 0.5, 0.6, 0.5, 0.12);
-      world.spawnParticle(Particle.LAVA, at, 16, 0.6, 0.4, 0.6, 0.0);
-      world.spawnParticle(Particle.END_ROD, at, 30, 0.4, 0.6, 0.4, 0.2);
-      world.playSound(at, Sound.ITEM_TOTEM_USE, 0.7F, 1.2F);
-      world.playSound(at, Sound.ENTITY_BLAZE_SHOOT, 1.0F, 0.8F);
-      world.playSound(at, Sound.ENTITY_FIREWORK_ROCKET_BLAST, 1.0F, 0.7F);
-      this.wings(plugin, player, 12);
+      Runnable revive = () -> {
+         AttributeInstance max = player.getAttribute(Attribute.MAX_HEALTH);
+         double cap = max == null ? 20.0 : max.getValue();
+         player.setHealth(Math.max(1.0, Math.min(cap, anchor.health)));
+         player.setFoodLevel(anchor.food);
+         player.setSaturation(anchor.saturation);
+         World world = to.getWorld();
+         Location at = to.clone().add(0.0, 1.0, 0.0);
+         world.spawnParticle(Particle.FLASH, at, 1, 0.0, 0.0, 0.0, 0.0, FLASH_GOLD);
+         world.spawnParticle(Particle.DUST_COLOR_TRANSITION, at, 120, 1.2, 1.0, 1.2, 0.0, EMBER);
+         world.spawnParticle(Particle.DUST, at, 60, 1.0, 0.8, 1.0, 0.0, GOLD);
+         world.spawnParticle(Particle.DUST, at, 40, 0.8, 0.8, 0.8, 0.0, ORANGE);
+         world.spawnParticle(Particle.FLAME, at, 80, 0.5, 0.6, 0.5, 0.12);
+         world.spawnParticle(Particle.LAVA, at, 16, 0.6, 0.4, 0.6, 0.0);
+         world.spawnParticle(Particle.END_ROD, at, 30, 0.4, 0.6, 0.4, 0.2);
+         world.playSound(at, Sound.ITEM_TOTEM_USE, 0.7F, 1.2F);
+         world.playSound(at, Sound.ENTITY_BLAZE_SHOOT, 1.0F, 0.8F);
+         world.playSound(at, Sound.ENTITY_FIREWORK_ROCKET_BLAST, 1.0F, 0.7F);
+         this.wings(plugin, player, 12);
+      };
+      if (Tasks.FOLIA) {
+         player.teleportAsync(to, TeleportCause.PLUGIN).thenAccept(moved -> plugin.tasks().runOn(player, revive));
+      } else {
+         player.teleport(to, TeleportCause.PLUGIN);
+         revive.run();
+      }
    }
 
    private void wings(FlameFFACore plugin, Player player, int ticks) {
-      BukkitTask[] handle = new BukkitTask[1];
+      ScheduledTask[] handle = new ScheduledTask[1];
       int[] left = new int[]{ticks};
-      handle[0] = Bukkit.getScheduler().runTaskTimer(plugin, () -> {
+      handle[0] = plugin.tasks().entityTimer(player, task -> {
          if (--left[0] >= 0 && player.isOnline()) {
             Location at = player.getLocation().add(0.0, 1.0, 0.0);
             player.getWorld().spawnParticle(Particle.DUST, at, 4, 0.5, 0.5, 0.5, 0.0, GOLD);
             player.getWorld().spawnParticle(Particle.FLAME, at, 3, 0.4, 0.4, 0.4, 0.03);
          } else {
-            handle[0].cancel();
+            task.cancel();
          }
-      }, 0L, 1L);
+      }, null, 0L, 1L);
    }
 
    @EventHandler(

@@ -592,6 +592,7 @@ public final class HudService implements Listener {
       this.plugin.combatHud().sweepNumbers();
 
       for (Player var8 : Bukkit.getOnlinePlayers()) {
+         this.plugin.weapons().tick(var8);
          if (!Bots.is(var8)) {
             boolean var5 = Bots.sparring(var8);
             if (!var5) {

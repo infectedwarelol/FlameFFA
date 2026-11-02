@@ -6,6 +6,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.UUID;
 import org.bukkit.Bukkit;
 import org.bukkit.Color;
@@ -28,7 +29,6 @@ import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.inventory.EquipmentSlot;
 import org.bukkit.inventory.ItemStack;
-import org.bukkit.scheduler.BukkitTask;
 import org.bukkit.util.Vector;
 
 public final class AegisShield implements CustomWeapon, Listener {
@@ -38,7 +38,7 @@ public final class AegisShield implements CustomWeapon, Listener {
    private static final Color FLASH = Color.fromRGB(255, 226, 138);
    private final FlameFFACore plugin;
    private final AegisWard ward;
-   private final Map<UUID, Integer> wards = new HashMap<>();
+   private final Map<UUID, Integer> wards = new ConcurrentHashMap<>();
 
    public AegisShield(FlameFFACore plugin) {
       this.plugin = plugin;
@@ -115,20 +115,19 @@ public final class AegisShield implements CustomWeapon, Listener {
    }
 
    private void hold(Player player, int ticks) {
-      BukkitTask[] handle = new BukkitTask[1];
       int[] left = new int[]{ticks};
       long every = Math.max(1, Math.min(4, this.plugin.configs().main().getInt(this.path() + ".visual.update-ticks", 2)));
-      handle[0] = Bukkit.getScheduler().runTaskTimer(this.plugin, () -> {
+      this.plugin.tasks().entityTimer(player, task -> {
          left[0] = (int)(left[0] - every);
          if (left[0] <= 0 || !player.isOnline() || !this.up(player)) {
             this.ward.clear(player);
-            handle[0].cancel();
+            task.cancel();
          } else if (!player.isHandRaised()) {
             this.ward.clear(player);
          } else {
             this.ward.draw(player);
          }
-      }, 0L, every);
+      }, () -> this.ward.clear(player), 0L, every);
    }
 
    @EventHandler(
