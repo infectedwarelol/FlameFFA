@@ -1,0 +1,25 @@
+// author flamesentinell
+plugins {
+    java
+}
+
+group = "dev.flamesentinell"
+version = "1.0.0"
+
+repositories {
+    maven("https://repo.papermc.io/repository/maven-public/")
+    mavenCentral()
+}
+
+dependencies {
+    compileOnly("com.velocitypowered:velocity-api:3.4.0-SNAPSHOT")
+}
+
+java {
+    toolchain.languageVersion.set(JavaLanguageVersion.of(21))
+}
+
+tasks.withType<JavaCompile>().configureEach {
+    options.encoding = "UTF-8"
+    options.release.set(21)
+}
