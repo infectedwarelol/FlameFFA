@@ -1,0 +1,84 @@
+# rank ids map to luckperms groups
+# weight decides hierarchy, higher beats lower
+# every rank inherits the one below it in luckperms itself
+#
+# one rank, one kit, same id for both
+# kits are not defined here, they are captured in game with
+#   /rankkit set <rank>
+# which stores your current inventory as that rank's kit
+#
+# cooldown-seconds is per rank and each rank counts down on its own
+# starter is free and always available, the paid kits are once an hour
+# a paid kit on cooldown drops you to the next kit down, never to nothing
+# cooldowns are stored in the database so a relog or a restart does not clear them
+
+ranks:
+  starter:
+    group: default
+    weight: 0
+    display: "<gray>Starter"
+    icon: IRON_SPEAR
+    cooldown-seconds: 0
+
+  # booster is a perk for boosting the discord server and is never sold
+  # perk ranks sit beside the paid ladder so buying a rank keeps booster and losing one falls back to it
+  booster:
+    group: booster
+    weight: 5
+    display: "<#f47fff>Booster"
+    icon: GOLDEN_SPEAR
+    cooldown-seconds: 3600
+    perk: true
+    locked-hint: "<light_purple>Boost the Discord server to unlock"
+
+  ember:
+    group: ember
+    weight: 10
+    display: "<#e0803f>Ember"
+    icon: COPPER_SPEAR
+    cooldown-seconds: 3600
+
+  sentinel:
+    group: sentinel
+    weight: 20
+    display: "<#d9b45b>Sentinel"
+    icon: DIAMOND_SPEAR
+    cooldown-seconds: 3600
+
+  flame:
+    group: flame
+    weight: 30
+    display: "<#f2803c>Flame"
+    icon: NETHERITE_SPEAR
+    cooldown-seconds: 3600
+
+  inferno:
+    group: inferno
+    weight: 40
+    display: "<#e8442a>Inferno"
+    icon: MACE
+    cooldown-seconds: 3600
+
+# staff roles are a separate track and never grant kits
+# permission node checked is flameffacore.staff.<id>
+staff:
+  helper:
+    group: helper
+    weight: 10
+    display: "<blue>Helper"
+  screensharer:
+    group: screensharer
+    weight: 20
+    display: "<dark_aqua>SS"
+  mod:
+    group: mod
+    weight: 30
+    display: "<dark_green>Mod"
+  admin:
+    group: admin
+    weight: 40
+    display: "<red>Admin"
+  # only the tag, owner is never a group
+  owner:
+    display: "<dark_red>Owner"
+  # there is no owner group, owner is the console and the root account written into the plugin

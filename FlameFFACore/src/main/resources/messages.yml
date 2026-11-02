@@ -1,0 +1,311 @@
+# all strings are minimessage
+prefix: "<gray>[<gradient:#f2c14e:#e8552f>Flame</gradient><gray>] "
+
+general:
+  no-permission: "<prefix><red>You do not have permission."
+  players-only: "<prefix><red>Players only."
+  unknown-player: "<prefix><red>No player called <white><name></white>."
+  reloaded: "<prefix><green>Configuration reloaded."
+  usage: "<prefix><red>Usage: <white><usage></white>"
+  operator-only: "<prefix><red>Operators only."
+  owner-only: "<prefix><red>Only the owner can do that."
+  minted: "<prefix><green>Gave you <white><amount>x <what></white>."
+
+kit:
+  given: "<prefix><green>Equipped <white><kit></white>."
+  locked: "<prefix><red>You need <white><rank></white> for that kit."
+  unknown: "<prefix><red>No kit called <white><kit></white>."
+  cooldown: "<prefix><red>The <white><kit></white> kit is on cooldown for <white><time></white>."
+  respawn-empty: "<prefix><gray>Use <white>/kit</white> to gear up."
+  combat: "<prefix><red>Not while in combat."
+  not-at-spawn: "<prefix><red>You can only take a kit at spawn."
+  not-empty: "<prefix><red>Drop your loot and tokens first."
+  menu-title: "<dark_gray>Kits"
+  not-set: "<prefix><red>No kit has been set for <white><rank></white> yet."
+  # the kit picker
+  menu-items: "<gray><count> items"
+  menu-cooldown-every: "<dark_gray>Cooldown <time>"
+  menu-locked: "<red>Locked, needs <rank>"
+  # shown under a locked kit, leave blank to hide
+  menu-store: "<gray>Get it at <white>store.flameffa.net"
+  menu-not-set: "<yellow>Not set up yet"
+  menu-ready-in: "<red>Ready in <white><time>"
+  menu-drop-loot: "<red>Drop your loot first"
+  menu-equip: "<green>Left click to equip"
+  menu-preview: "<gray>Right click to see what is inside"
+  menu-info-title: "<white>How kits work"
+  menu-info:
+    - "<gray>Left click a kit to take it"
+    - "<gray>Right click a kit to look inside"
+    - "<gray>Paid kits are once an hour, the free one is always there"
+  preview-title: "<dark_gray><rank> kit"
+  preview-equip: "<green>Equip <rank>"
+  preview-back: "<gray>Back to kits"
+
+hud:
+  title: "<gradient:#f2c14e:#e8552f><bold>FLAME FFA</bold></gradient>"
+  date: "<dark_gray>⌚ <gray><date>"
+  player: "<#f2c14e>☻ <gray>Player: <white><player>"
+  kills: "<#e8552f>⚔ <gray>Kills: <white><value>"
+  deaths: "<red>☠ <gray>Deaths: <white><value>"
+  streak: "<gold>✦ <gray>Streak: <white><value>"
+  kd: "<yellow>⚖ <gray>K/D: <white><value>"
+  best-streak: "<gray>Best Streak: <white><value>"
+  playtime: "<green>⌛ <gray>Playtime: <white><value>"
+  online: "<aqua>☺ <gray>Online: <white><value>"
+  ping: "<light_purple>⚡ <gray>Ping: <white><value>ms"
+  # every key you hold across all tiers, hidden at zero
+  keys-total: "<yellow>✧ <gray>Keys: <white><value>"
+  keys: "<gray><crate>: <yellow><amount>"
+  # blank separators
+  spacer-1: ""
+  spacer-2: ""
+  spacer-3: ""
+  spacer-4: ""
+  spacer-keys: "<reset> "
+  spacer-ip: "<reset>  "
+  ip: "<#f2c14e><ip>"
+  # under every nametag, the number in front is their health
+  below-name: "<red>❤ <white>Health"
+  # shown under a crate's name while you are looking at it
+  crate-keys: "<gray>You have <yellow><amount></yellow> <crate> Keys"
+
+keys:
+  balance-header: "<prefix><gray>Key balance"
+  balance-line: "<gray>  <white><crate></white> <dark_gray>x</dark_gray> <yellow><amount></yellow>"
+  none: "<prefix><gray>You have no keys."
+  not-enough: "<prefix><red>You need a <white><crate></white> key."
+  granted: "<prefix><green>Received <white><amount>x <crate></white> key."
+  need-slots: "<prefix><red>You need <white><slots></white> free slot(s)."
+
+crate:
+  opened: "<prefix><green>You won <white><reward></white>."
+  broadcast: "<prefix><white><player></white> <gray>opened <white><crate></white> and won <white><reward></white>."
+  unknown: "<prefix><red>No crate called <white><crate></white>."
+  no-loot: "<prefix><red>The <white><crate></white> crate has no loot set yet."
+  not-for-sale: "<prefix><red>The <white><crate></white> crate is not for sale."
+  not-enough-tokens: "<prefix><red>That costs <white><cost></white> Kill Tokens, you have <white><held></white>."
+  bought: "<prefix><green>Bought <white><amount>x <crate></white> for <white><cost></white> Kill Tokens."
+  editor-title: "<dark_gray>Loot: <crate>"
+  editor-hint: "<prefix><gray>Put the <white><crate></white> loot in and close to save."
+  loot-saved: "<prefix><green><white><crate></white> crate saved, <white><count></white> items, <chance>% each."
+  save-failed: "<prefix><red>Save failed, check the console."
+  placed: "<prefix><green>Placed a <white><crate></white> crate at <white><x> <y> <z></white>."
+  removed: "<prefix><yellow>Removed the <white><crate></white> crate."
+  no-target: "<prefix><red>Look at a block first."
+  already-placed: "<prefix><red>There is already a crate there."
+  place-failed: "<prefix><red>Save failed, check the console."
+  not-a-crate: "<prefix><red>You are not looking at a crate."
+  none-placed: "<prefix><gray>No crates are placed. Use <white>/crate place <crate></white>."
+  list-header: "<prefix><gray><count> placed crate(s)"
+  list-line: "<gray>  <white><crate></white> <dark_gray>-</dark_gray> <world> <white><x> <y> <z>"
+  protected: "<prefix><red>That is a crate."
+
+rank:
+  granted: "<prefix><green>You now have <white><rank></white>."
+  granted-temp: "<prefix><green>You now have <white><rank></white> for <white><days></white> days."
+  revoked: "<prefix><yellow>Your <white><rank></white> has been removed."
+  broadcast: "<prefix><white><player></white> <gray>bought <white><rank></white>."
+
+bots:
+  in-fight: "<prefix><red>Not during a bot fight. Your own gear comes back when it ends."
+
+booster:
+  added: "<prefix><green>Gave <white><player></white> the booster rank."
+  removed: "<prefix><yellow>Took the booster rank from <white><player></white>."
+  received: "<prefix><light_purple>Thanks for boosting the Discord, you now have the <white><rank></white> rank."
+  lost: "<prefix><yellow>Your booster rank has been removed."
+  no-rank: "<prefix><red>No rank called <white><rank></white> in ranks.yml."
+
+arena:
+  combat-tagged: "<prefix><red>Combat tagged for <white><seconds>s</white>."
+  combat-over: "<prefix><green>You are out of combat."
+  combat-forgiven: "<prefix><green><white><player></white> called it off, your combat tag is cleared."
+  forgave: "<prefix><gray>Cleared your combat tag on <white><count></white> player(s)."
+  forgave-none: "<prefix><gray>Nobody was tagged by you."
+  combat-log: "<prefix><red><player></red> <gray>logged out in combat."
+  safezone: "<prefix><red>No fighting at spawn."
+  killstreak: "<gradient:#f2c14e:#e8552f>\u276f</gradient> <gradient:#ffd76a:#ff8a3d><bold><player></bold></gradient> <gray>is on a <#ff9d3d><bold><streak></bold></#ff9d3d> <gray>kill streak"
+  streak-ended: "<prefix><white><killer></white> <gray>ended <white><victim></white>'s <white><streak></white> streak."
+  death: "<prefix><white><victim></white> <gray>was killed by <white><killer></white>."
+  death-alone: "<prefix><white><victim></white> <gray>died."
+
+staff:
+  frozen: "<red><bold>YOU ARE FROZEN</bold></red>"
+  frozen-sub: "<gray>Join the discord. Do not log out."
+  freeze-on: "<prefix><green>Froze <white><target></white>."
+  freeze-off: "<prefix><green>Unfroze <white><target></white>."
+  frozen-move: "<prefix><red>You are frozen."
+  frozen-command: "<prefix><red>You are frozen."
+  vanish-on: "<prefix><green>You are now vanished."
+  vanish-off: "<prefix><green>You are now visible."
+  hierarchy: "<prefix><red>They outrank you."
+  action-log: "<dark_gray>[<red>Staff</red>] <white><actor></white> <gray><action></gray> <white><target></white> <dark_gray><detail>"
+
+villager:
+  name-format: "<gold><bold><name>"
+  created: "<prefix><green>Created <white><preset></white>. <gray>/villager edit <preset> to set the trades."
+  exists: "<prefix><red><white><preset></white> already exists."
+  unknown: "<prefix><red>No preset called <white><preset></white>."
+  bad-name: "<prefix><red>Lowercase letters, numbers, - and _ only, max 32."
+  bad-coords: "<prefix><red>Bad coordinates."
+  editor-title: "<dark_gray>Trades: <preset>"
+  editor-hint: "<prefix><gray>Two trades per row: <white>cost, cost, result</white>. Close to save."
+  divider-name: "<gray>cost <dark_gray>|</dark_gray> cost <dark_gray>|</dark_gray> result"
+  divider-lore:
+    - "<dark_gray>Left 3 slots: what they pay, what they pay, what they get"
+    - "<dark_gray>Second cost is optional"
+  saved: "<prefix><green>Saved <white><count></white> trade(s) to <white><preset></white>."
+  save-failed: "<prefix><red>Save failed, check the console."
+  no-trades: "<prefix><red>Nothing for sale yet."
+  spawned: "<prefix><green>Spawned a <white><preset></white> trader at <white><x> <y> <z></white>."
+  spawn-failed: "<prefix><red>Spawn failed, check the console."
+  removed: "<prefix><yellow>Removed the <white><preset></white> trader."
+  none-near: "<prefix><red>No trader within 5 blocks."
+  skin-looking: "<prefix><gray>Looking up <white><name></white>..."
+  skin-unknown: "<prefix><red>No Mojang account called <white><name></white>."
+  skin-set: "<prefix><green>The <white><preset></white> trader now wears <white><name></white>'s skin."
+  skin-cleared: "<prefix><yellow>The <white><preset></white> trader is a villager again."
+  deleted: "<prefix><yellow>Deleted preset <white><preset></white> and <white><count></white> trader(s) selling it."
+  list-empty: "<prefix><gray>No presets. Use <white>/villager preset <name></white>."
+  list-header: "<prefix><gray><count> preset(s)"
+  list-line: "<gray>  <white><preset></white> <dark_gray>-</dark_gray> <green><trades> trades</green>, <yellow><placed> placed</yellow> <dark_gray>by <by>"
+safezone:
+  corner: "<prefix><green>Corner <n> set to <white><x> <y> <z></white>."
+  need-corners: "<prefix><red>Set pos1 and pos2 first, or give all six coordinates."
+  bad-coords: "<prefix><red>Bad coordinates."
+  set: "<prefix><green>Safezone set: <white><zone></white>."
+  cleared: "<prefix><yellow>Safezone cleared."
+  info: "<prefix><gray>Safezone: <white><zone></white>"
+  save-failed: "<prefix><red>Could not write config.yml, check the console."
+
+pack:
+  prompt: "<gradient:#f2c14e:#e8552f>Flame FFA</gradient> <gray>needs its resource pack for fonts and weapons"
+
+tab:
+  title: "<gradient:#f2c14e:#e8552f><bold>FLAME FFA</bold></gradient>"
+  subtitle: "<gray><region> <dark_gray>|</dark_gray> <white><version>"
+  header-stats: "<aqua>☺ <gray>Online: <white><online>     <light_purple>⚡ <gray>Ping: <white><ping>ms"
+  footer-rank: "<gray>Rank: <rank>     <green>⌛ <gray>Playtime: <white><playtime>"
+  footer: "<#f2c14e>/buy <dark_gray>·</dark_gray> /kit <dark_gray>·</dark_gray> /stats <dark_gray>·</dark_gray> /leaderboard"
+  footer-ip: "<#e8552f><ip>"
+  # how a name reads in the player list, rank first
+  name-format: "<rank> <white><player>"
+
+chat:
+  # <message> is where what they said goes, everything around it is styled here
+  format: "<rank> <white><player><dark_gray>:</dark_gray> <gray><message>"
+  blocked: "<prefix><red>Not that word."
+  staff-alert: "<dark_gray>[<red>Chat</red>] <white><player></white> <gray>strike <strikes> <dark_gray><message>"
+
+protection:
+  no-break: "<prefix><red>You can't break this!"
+  denied: "<prefix><red>You can't build here."
+
+sweep:
+  warning: "<prefix><gray>Arena clear in <white><seconds>s</white>."
+  done: "<prefix><gray>Arena cleared, <white><blocks></white> blocks and <white><items></white> items."
+
+spawn:
+  warmup: "<prefix><gray>Teleporting in <white><seconds>s</white>, don't take damage."
+  arrived: "<prefix><green>Teleported to spawn."
+  combat: "<prefix><red>Not while in combat."
+  already: "<prefix><yellow>Already teleporting."
+  already-there: "<prefix><gray>You are already at spawn."
+  cancelled: "<prefix><red>Teleport cancelled."
+  set: "<prefix><green>FFA spawn set to <white><x> <y> <z></white>, everyone joins and respawns here now."
+  save-failed: "<prefix><red>Could not write config.yml, check the console."
+
+voucher:
+  name: "<gold><crate> Key Voucher"
+  lore:
+    - "<gray>Right click for a <crate> key"
+  redeemed: "<prefix><green>+1 <white><crate></white> key."
+  failed: "<prefix><red>Something went wrong, you kept the voucher."
+  dead: "<prefix><red>The <white><crate></white> crate no longer exists."
+  given: "<prefix><green>Gave you <candles>x <white><crate></white> voucher."
+
+weapon:
+  tether-attached: "<aqua>Chained to <white><player></white>"
+  tether-hooked: "<red><player></red><gray> has you chained"
+  tether-snapped: "<gray>The chain snapped."
+  tether-expired: "<gray>The chain faded."
+  tether-spent: "<gray>The chain gave out."
+  tether-gone: "<gray>The chain went slack." 
+  comet-too-low: "<gray>Too close to the ground, you need <white><blocks></white> blocks under you"
+  comet-finisher: "<gradient:#5fd4ff:#7b3fd6><bold>SHATTERED COMET</bold></gradient>"
+  # the meter is one glyph per stack, lit ones for what you have and dark ones for the rest
+  overkill-meter-lit: "<gradient:#ffb347:#ff2d00>✦</gradient>"
+  overkill-meter-dark: "<#4a1010>✧"
+  # what rides the action bar on each hit, just above the experience bar
+  overkill-stack: "<gradient:#ff6a00:#8e0b0b><bold>OVERKILL</bold></gradient> <meter>"
+  # the bar from the pack, the plugin fills in the glyph for the stack count or the time left
+  overkill-bar-glyph: "<white><font:flameffa:hud><glyph></font></white>"
+  # without the pack, what the action bar shows while the mace burns
+  overkill-lit: "<gradient:#ff6a00:#8e0b0b><bold>OVERKILL</bold></gradient> <meter> <white><seconds>s"
+  overkill-not-ready: "<gray>The mace is not lit."
+  overkill-faded: "<gray>The mace burned out."
+  overkill-blast: "<#ff9b3d>Blast caught <white><hit></white> player(s)"
+  aegis-held: "<#9de0ff>The ward held"
+  aegis-repelled: "<gray><player>'s ward threw you back"
+  cooldown: "<red>Ready in <white><seconds>s</white>"
+  unknown: "<prefix><red>No weapon called <white><id></white>."
+
+cooldown-bar:
+  # one entry per custom weapon on the hotbar in slot order, colour comes from each weapon's hud-colour
+  entry: "<colour><bold><seconds>s"
+  ready: "<colour><bold>READY"
+  separator: "<dark_gray> // "
+
+rankkit:
+  set: "<prefix><green><white><rank></white> kit saved, <slots> items."
+  cleared: "<prefix><yellow>Cleared the <white><rank></white> kit."
+  not-set: "<prefix><red>No kit set for <white><rank></white>."
+  unknown-rank: "<prefix><red>No rank called <white><rank></white>."
+  save-failed: "<prefix><red>Save failed, check the console."
+  list-header: "<prefix><gray>Rank kits"
+  list-line: "<gray>  <white><rank></white> <dark_gray>-</dark_gray> <green><slots> items</green> <dark_gray>set by <by>"
+  list-empty: "<gray>  <white><rank></white> <dark_gray>-</dark_gray> <red>not set"
+
+loot:
+  no-drop: "<prefix><red>You can't drop kit gear."
+
+tebex:
+  delivered: "<prefix><green>Delivered <white><what></white>."
+  duplicate-txn: "<gray>Transaction <white><txn></white> already done."
+
+afk:
+  warning: "<yellow>Idle. Moving you to the lobby in <white><time>s</white>"
+  moved: "<prefix><gray>You were idle at spawn, so you were sent to the lobby."
+  no-lobby: "<prefix><red>You are idle, but there is no lobby to send you to."
+  kicked: "<gray>Idle for too long at spawn."
+
+combat:
+  bar: "<red><bold>IN COMBAT</bold></red> <gray>· <white><seconds>s"
+  damage: "<#ff6b4a>-<amount>"
+
+stats:
+  header: "<gradient:#f2c14e:#e8552f><bold><player></bold></gradient>"
+  line: "<gray><label>: <white><value>"
+
+leaderboard:
+  title: "<gradient:#f2c14e:#e8552f><bold>TOP <metric></bold></gradient>"
+  row: "<gray><rank>. <white><player></white> <#f2c14e><value>"
+  empty: "<gray>nobody yet"
+  loading: "<gray>loading"
+  placed: "<prefix><green>Board placed, showing <white><metric></white>."
+  removed: "<prefix><gray>Board removed."
+  none-near: "<prefix><red>No board within 6 blocks."
+  count: "<prefix><gray><amount> board(s) placed."
+
+cosmetics:
+  title: "<dark_gray>Cosmetics"
+  slot-kill: "<gradient:#f2c14e:#e8552f><bold>Kill Effect</bold></gradient>"
+  slot-aura: "<gradient:#f2c14e:#e8552f><bold>Killstreak Aura</bold></gradient>"
+  select: "<gray>Click to use"
+  active: "<green>Active"
+  locked: "<dark_gray>On the store"
+  locked-message: "<prefix><gray>That one is on the store."
+  picked: "<prefix><green>Now using <white><name></white>."
+  cleared: "<prefix><gray>Cleared your <white><slot></white>."
+  disabled: "<prefix><gray>Cosmetics are off."

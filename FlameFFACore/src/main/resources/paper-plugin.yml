@@ -1,0 +1,43 @@
+name: FlameFFACore
+version: '1.0.0'
+main: dev.flamesentinell.flameffacore.FlameFFACore
+loader: dev.flamesentinell.flameffacore.FlameFFACoreLoader
+api-version: '1.21'
+authors: [ flamesentinell ]
+description: FFA core for spear and mace kits
+
+dependencies:
+  server:
+    LuckPerms:
+      load: BEFORE
+      required: true
+      join-classpath: true
+    Tebex:
+      load: BEFORE
+      required: false
+      join-classpath: false
+
+# declared so the defaults are a choice and not whatever bukkit assumes
+# op means server operators hold it unless luckperms says otherwise
+permissions:
+  flameffacore.kit.starter:
+    description: the free starter kit
+    default: true
+  flameffacore.kit.nocooldown:
+    description: no kit cooldowns  set on the owner in luckperms
+    default: false
+  flameffacore.staff.helper:
+    description: read only staff tools
+    default: false
+  flameffacore.staff.screensharer:
+    description: freeze and inventory checks
+    default: false
+  flameffacore.staff.mod:
+    description: vanish and moderation
+    default: false
+  flameffacore.staff.admin:
+    description: grants, reload, item spawning, the top of the grantable ladder
+    default: op
+  flameffacore.staff.bypass:
+    description: ignore the blocked command list
+    default: op

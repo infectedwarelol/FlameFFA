@@ -1,0 +1,55 @@
+# paid cosmetics, every one of them purely visual
+# owning one is a permission, so a tebex package only has to run a single lp command
+# example: lp user {id} permission set flameffacore.cosmetic.kill.lightning true
+enabled: true
+
+# an aura only shows once its owner is on a streak this long, so it means something
+aura-from-streak: 5
+
+none-display: "<gray>None"
+
+# played on whoever you just killed
+kill:
+  nebula:
+    display: "<gradient:#5fd4ff:#7b3fd6>Nebula Burst</gradient>"
+    permission: flameffacore.cosmetic.kill.nebula
+    primary: "#9de8ff"
+    secondary: "#2e0b5e"
+  inferno:
+    display: "<gradient:#ffd76a:#e8262b>Inferno</gradient>"
+    permission: flameffacore.cosmetic.kill.inferno
+    primary: "#ffb347"
+    secondary: "#8c1b12"
+  lightning:
+    display: "<gradient:#dff6ff:#5aa7ff>Thunderstrike</gradient>"
+    permission: flameffacore.cosmetic.kill.lightning
+    primary: "#dff6ff"
+    secondary: "#3a7bd5"
+  souls:
+    display: "<gradient:#8ef7e4:#1b6f63>Soul Harvest</gradient>"
+    permission: flameffacore.cosmetic.kill.souls
+    primary: "#8ef7e4"
+    secondary: "#1b6f63"
+  fireworks:
+    display: "<gradient:#ff9d3d:#ff4fa3>Celebration</gradient>"
+    permission: flameffacore.cosmetic.kill.fireworks
+    primary: "#ff9d3d"
+    secondary: "#ff4fa3"
+
+# a slow halo that appears once you are on a streak
+aura:
+  flame:
+    display: "<gradient:#ffd76a:#e8262b>Flame Halo</gradient>"
+    permission: flameffacore.cosmetic.aura.flame
+    primary: "#ff9d3d"
+    secondary: "#e8262b"
+  storm:
+    display: "<gradient:#dff6ff:#3a7bd5>Storm Halo</gradient>"
+    permission: flameffacore.cosmetic.aura.storm
+    primary: "#8ecbff"
+    secondary: "#3a7bd5"
+  nebula:
+    display: "<gradient:#9de8ff:#7b3fd6>Nebula Halo</gradient>"
+    permission: flameffacore.cosmetic.aura.nebula
+    primary: "#9de8ff"
+    secondary: "#7b3fd6"

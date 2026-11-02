@@ -1,0 +1,55 @@
+# crate tiers
+#
+# loot is NOT defined here, build it in game with
+#   /crate <id> set
+# every item left in the 54 slot editor is one entry with an equal chance
+#
+# keys are a currency, not an item. a player holds a separate running
+# balance for every tier at once and spends it with /crate open <id>
+# or by right clicking the crate block
+#
+# token-price is what the tier costs in Kill Tokens via /crate buy
+# 0 means not for sale with tokens, keys come from villager trades instead
+#
+# voucher is the candle a villager hands out for this tier, right clicking it
+# turns it into one key on the player's balance. any candle material works
+# adding a tier is one block here, nothing else to edit
+#
+# WHERE a crate sits is NOT set here any more. place them in game with
+#   /crate place <id>      put one where you are looking
+#   /crate remove          take away the one you are looking at
+#   /crate list            every placement and its coordinates
+# placements go in ffa_crate_blocks so they survive a restart and a world reset,
+# and one tier can have as many crates around the map as you like
+
+crates:
+
+  common:
+    token-price: 0
+    voucher: WHITE_CANDLE
+    display: "<white>Common Crate"
+
+  uncommon:
+    token-price: 0
+    voucher: LIME_CANDLE
+    display: "<green>Uncommon Crate"
+
+  rare:
+    token-price: 0
+    voucher: CYAN_CANDLE
+    display: "<aqua>Rare Crate"
+
+  epic:
+    token-price: 0
+    voucher: MAGENTA_CANDLE
+    display: "<light_purple>Epic Crate"
+
+  legendary:
+    token-price: 0
+    voucher: YELLOW_CANDLE
+    display: "<gold>Legendary Crate"
+
+  mythic:
+    token-price: 0
+    voucher: RED_CANDLE
+    display: "<gradient:#f2c14e:#e8442a>Mythic Crate</gradient>"

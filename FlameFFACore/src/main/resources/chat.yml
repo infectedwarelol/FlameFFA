@@ -1,0 +1,64 @@
+# FlameFFACore chat guard
+# author flamesentinell
+#
+# this list is slurs only, the sort of word that is an attack whoever says it
+# ordinary swearing is not here on purpose, fuck shit bitch and the rest all go through
+#
+# you do not need to write out the leetspeak or spaced versions of anything
+# the guard folds a message down before it looks, so all of these are one word to it
+#   the plain spelling, ones for i, zeros for o, dollars for s
+#   letters spread out with spaces dots or dashes
+#   letters padded out, three of each
+#   accents, fullwidth text, and cyrillic look alikes
+#
+# a term of five letters or more also counts inside a longer word, a shorter one has
+# to be the whole word, which is what keeps ordinary sentences out of trouble
+
+enabled: true
+
+# take the message away from everyone rather than let it through
+cancel-message: true
+# tell the staff who said what, it also goes in ffa_staff_log either way
+notify-staff: true
+
+# strikes stack up and then the command below runs, 0 means never
+strike-limit: 3
+# a strike is forgotten after this long without another
+strike-decay-minutes: 60
+# <player> is filled in, run from the console
+punish-command: "ban <player> 7d Slurs in chat"
+
+banned:
+  - nigger
+  - nigga
+  - niglet
+  - faggot
+  - fag
+  - tranny
+  - shemale
+  - chink
+  - gook
+  - spic
+  - beaner
+  - wetback
+  - kike
+  - heeb
+  - paki
+  - raghead
+  - towelhead
+  - jigaboo
+  - retard
+  - mongoloid
+
+# words that would otherwise be caught by the folding, checked before anything else
+allowed:
+  - nigeria
+  - nigerian
+  - spice
+  - spices
+  - spicy
+  - classic
+  - assassin
+  - analysis
+  - shiitake
+  - scunthorpe

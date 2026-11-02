@@ -1,0 +1,718 @@
+# FlameFFACore
+# author flamesentinell
+
+# bumped when a setting has to be retuned, the plugin then takes that one key back
+config-version: 28
+
+storage:
+  # h2 keeps everything in plugins/FlameFFACore/data.mv.db, nothing to install, works on any host
+  # mariadb is for when you want the data on a real database server, fill in the rest for that
+  type: h2
+  file: data
+  host: 127.0.0.1
+  port: 3306
+  database: flameffacore
+  username: flameffacore
+  password: change-me
+  pool-size: 10
+  # swap to com.mysql.cj.jdbc.Driver if you run mysql instead of mariadb
+  # and change the artifact in FlameFFACoreLoader to match
+  driver: org.mariadb.jdbc.Driver
+  # extra jdbc params appended to the url
+  properties: "useSSL=false&allowPublicKeyRetrieval=true&characterEncoding=utf8"
+
+security:
+  # granting ranks keys and currency is owner work, the console for tebex and the root account
+  # ops are admin and cannot, there is no switch for that
+
+  # co owners, everything flamesentinell can do, only this file can add one
+  # a mojang uuid counts everywhere, a plain name only counts on an offline server
+  owners:
+    - accb001a-08aa-4c2d-a1f2-1a8dd0975df6   # BohdanBro
+    - BohdanBro
+
+  # commands players may never run, staff with flameffacore.staff.bypass are exempt
+  blocked-commands:
+    - "/reload"
+    - "/plugins"
+    - "/pl"
+    - "/ver"
+
+  # commands only the console and the root owner may run, no permission bypasses this
+  # op and deop so an op cannot make more ops, luckperms so an op cannot hand out ranks sideways
+  owner-only-commands:
+    - "/op"
+    - "/deop"
+    - "/minecraft:op"
+    - "/minecraft:deop"
+    - "/lp"
+    - "/luckperms"
+    - "/perms"
+    - "/permissions"
+    - "/stop"
+    - "/restart"
+
+tab:
+  # shown at the bottom of the sidebar, blank hides that line
+  ip: flameffa.net
+  enabled: true
+  # shown under the server name, write it however you want it to read
+  region: "Amsterdam, NL"
+  # left blank the server reports its own version, so it can never say the wrong one
+  version: ""
+  # the resource pack font for the sidebar tab list nametags and crate text  blank uses the normal font
+  font: flameffa:bold
+  # staff wear their role tag above their bought rank
+  staff-tags: true
+  # the health line under every nametag
+  health-below-name: true
+  # the date at the top of the sidebar
+  date-format: "d MMM, yyyy"
+  timezone: "Europe/Amsterdam"
+
+spawn:
+  # the safezone is only reachable with /spawn
+  # seconds between the command and the teleport, any damage cancels it, 0 is instant
+  warmup-seconds: 3
+
+arena:
+  world: world
+  # the plugin never builds or generates anything, the map is yours
+  # with spawn left out below the world's own spawn point is used
+  # stand where you want it and run /ffaadmin setspawn to fill this in or uncomment and type it
+  # spawn:
+  #   x: 0.5
+  #   y: 64.0
+  #   z: 0.5
+  #   yaw: 0.0
+  #   pitch: 0.0
+  # seconds a player is combat tagged after taking or dealing damage
+  combat-tag-seconds: 25
+  # seconds between no pvp here warnings for the same player, however many swings they take
+  safezone-warning-seconds: 10
+  # typing exactly this in chat drops every combat tag you are holding on other players
+  # leave it blank to turn that off
+  forgive-phrase: "mb all"
+  # what happens if a tagged player disconnects
+  combat-log-kill: true
+  # true takes kit gear away from anyone who leaves  false keeps it unless the leave was a combat log
+  wipe-kit-on-quit: false
+  # seconds of spawn protection after respawn
+  spawn-protection-seconds: 5
+  # the spawn area, a box between two corners where nobody can be hit and /kit works
+  # set it in game with /safezone pos1, /safezone pos2, /safezone set, it is written here
+  # safezone:
+  #   world: world
+  #   x1: -10
+  #   y1: 60
+  #   z1: -10
+  #   x2: 10
+  #   y2: 80
+  #   z2: 10
+  # effects everyone has while inside, effect:level, removed the moment they leave
+  safezone-effects:
+    - haste:2
+    - regeneration:3
+    - saturation:2
+  # nothing is ever handed out automatically
+  # you respawn empty and either run /kit or take gear off somebody
+  # fallback only, the real cooldown is cooldown-seconds per rank in ranks.yml
+  kit-cooldown-seconds: 0
+
+# idle players in the safezone are moved off the arena server
+# nothing here touches players out in the arena, they are somebody else's problem
+# every ability here throws players around in ways an anticheat cannot predict
+# for the ticks one is running that player is handed a bypass permission, granted transiently
+# through luckperms so it is never written to storage and dies with the session
+# what a fight tells you while it is happening
+# standing top ten boards, placed in game with /leaderboard set
+leaderboards:
+  # how often each board asks the database again
+  refresh-seconds: 60
+  # written by the command, never edit by hand
+  placed: []
+
+combat-hud:
+  # a bar that counts your combat tag down
+  bar: true
+  # the number that floats off whoever you just hit, only you see your own
+  damage-numbers: true
+  damage-number-ticks: 16
+  # ability cooldowns drawn as bars on the action bar, above the hunger bar
+  cooldown-bar: true
+  # how long a message keeps the action bar to itself before the bars come back
+  action-bar-hold-ticks: 30
+
+anticheat:
+  enabled: true
+  # what to grant, grim's is grim.exempt, add your own if you run a second anticheat
+  permissions:
+    - grim.exempt
+  # how long an ordinary ability stays exempt
+  window-ticks: 60
+  # a launch is unpredictable until the landing, so that one gets far longer
+  launch-ticks: 200
+  # added to the end of every window, covers the tick or two after a landing
+  grace-ticks: 20
+
+# smbot fights, the bot plugin saves a fighter's own gear and gives it back afterwards
+# while a player carries the smbot_spar tag these commands are refused so nothing touches that swap
+bots:
+  spar-blocked-commands:
+    - "/kit"
+    - "/kits"
+    - "/rankkit"
+    - "/setkit"
+    - "/spawn"
+    - "/hub"
+    - "/lobby"
+    - "/crate"
+    - "/crates"
+    - "/keys"
+    - "/cosmetics"
+    - "/cosmetic"
+    - "/cc"
+    - "/villager"
+    - "/trader"
+    - "/npc"
+
+# the discord booster perk, handed out with /booster add <player>
+booster:
+  rank: booster
+
+protection:
+  # blocks anyone may put down, everything else needs creative mode
+  placeable:
+    - COBWEB
+  # blocks anyone may break, a map block broken this way comes back on the next sweep
+  breakable:
+    - COBWEB
+  # buckets anyone may pour, water only so nobody floods the map with lava
+  buckets:
+    - WATER_BUCKET
+  # whether breaking an allowed block drops its item
+  break-drops: false
+
+sweep:
+  # seconds between sweeps, every placed block and every item on the floor goes, 0 turns it off
+  seconds: 180
+  # a wind charge still flying after this many seconds hit nothing and is removed, 0 keeps them
+  wind-charge-seconds: 10
+  # seconds before a sweep the warning goes out, 0 for no warning
+  warn-seconds: 10
+  # placed cobwebs and water taken away and broken map blocks put back
+  blocks: true
+  # dropped items xp orbs and stuck arrows removed
+  items: true
+
+afk:
+  # seconds with no movement, no look change and no clicks before they are moved
+  seconds: 300
+  # lobby sends them through the proxy, kick disconnects them, none turns this off
+  action: lobby
+  # the server name exactly as it appears in velocity.toml under [servers]
+  server: lobby
+  # action bar countdown starts this many seconds before, 0 for no warning
+  warn-seconds: 30
+  # nobody holding this is ever moved
+  exempt-permission: flameffacore.afk.exempt
+
+loot:
+  # gear drops when you die and the killer can pick it up
+  # this is the core of the server, a weaker player can take a stronger player's kit
+  # turn this off and kit gear vanishes on death instead
+  drop-kit-items: true
+  # letting players throw gear on the floor by hand lets them feed a friend for free
+  # dying is the intended way to lose gear, so this stays off
+  allow-manual-drop: false
+
+crates:
+  # free inventory slots a player must have before a crate will open
+  # keys are never spent unless the reward has somewhere to land
+  required-free-slots: 1
+
+tokens:
+  # kill tokens stack and drop on death, a long streak is loot worth taking
+  per-kill: 1
+  material: NETHER_STAR
+  name: "<gold>Kill Token"
+  lore:
+    - "<gray>1 per kill"
+  # the bigger note, moves exactly like a kill token
+  # the plugin never converts between the two on its own, set that up as a villager trade
+  # worth only fills the lore, nothing enforces it, the exchange rate is whatever your trade says
+  compressed:
+    material: PEARLESCENT_FROGLIGHT
+    name: "<aqua>Compressed Kill Token"
+    worth: 64
+    lore:
+      - "<gray>Worth <white><worth></white> Kill Tokens"
+
+weapons:
+  # every custom weapon is unbreakable, that is not a setting
+  # the ability is shift + right click with the weapon in your main hand
+  projection-spear:
+    # what the cooldown bar calls it
+    short-name: "Projection"
+    # colour of this weapon on the cooldown row above the hotbar
+    hud-colour: "<#9fe0ff>"
+    name: "<gradient:#7fd3ff:#c8f0ff><bold>Projection Spear</bold></gradient>"
+    lore:
+      - "<gray>Shift + RMB to project yourself forward, scales with speed"
+      - "<dark_gray><cooldown>s cooldown"
+    # seconds between projections, 0 is no limit
+    cooldown-seconds: 25
+    # how far you can project from standing still, into the air too
+    range: 15
+    # extra blocks of reach per block per tick you were already moving
+    # a sprint is about 0.28 so at 20 it adds 5 or 6 blocks, a lunge adds far more
+    range-per-speed: 20
+    # reach never goes past this however fast you were going
+    max-range: 40
+    # how many copies of you appear along the way, spread evenly however far you go
+    frames: 6
+    # ticks from the click to arriving, one of them is spent measuring your speed
+    travel-ticks: 4
+    # ticks the whole trail hangs after you land before it vanishes
+    linger-ticks: 8
+
+  comet-spear:
+    # what the cooldown bar calls it
+    short-name: "Comet"
+    # colour of this weapon on the cooldown row above the hotbar
+    hud-colour: "<#a07dff>"
+    # clear air needed under your feet before the air variant will start
+    # a jump clears about 1.25, so this stops it being used off flat ground
+    min-air-blocks: 3.0
+    name: "<gradient:#5fd4ff:#7b3fd6><bold>Comet Spear</bold></gradient>"
+    lore:
+      - "<#8ab4ff>Shift + RMB in the air and keep holding to aim, release to launch"
+      - "<#8ab4ff>Shift + RMB on the ground to blast 25 blocks up"
+      - "<#8ab4ff>No fall damage until you land"
+      - "<dark_gray><cooldown>s cooldown"
+    # the air launch and the ground blast keep separate cooldowns
+    cooldown-seconds: 20
+    ground-cooldown-seconds: 20
+    # ticks you can hang in the air aiming before it launches on its own, 40 is the most it allows
+    hover-ticks: 30
+    # the spear winds up in your hand the whole time you hang, so the thrust is ready on landing
+    # off goes back to a dead hold, use that if the vanilla wind up ever cuts the hover short
+    charge-while-hovering: true
+    # how far the aim reaches, past that you fly toward the point in the distance
+    range: 40
+    # air launch speed in blocks per tick, the client caps a single axis near 3.9
+    speed: 3.1
+    # the push is re-applied for this many ticks so drag does not kill the dash at once
+    # this is the real reach dial, 5 is about 50 blocks flat, 0 is a single shove
+    boost-ticks: 5
+    # upward speed of the ground blast in blocks per tick, 2.3 tops out about 25 blocks up
+    ground-lift: 2.3
+    # ticks of flame trail behind you, stops early when you land
+    trail-ticks: 40
+    # the finisher, land a spear hit while still dashing and the sky comes down on the spot
+    finisher:
+      # ticks after the air launch that a spear hit still counts, 0 turns the finisher off
+      window-ticks: 60
+      # only the charged spear thrust counts, off means any hit with this spear does
+      require-spear-attack: false
+      comets: 22
+      # ticks between one comet and the next, each one jitters around this on its own
+      stagger: 2
+      # blocks a comet drops each tick
+      fall-speed: 1.1
+      # blocks out from the hit that comets can land, they do not land in an even disc
+      spread: 5.5
+      # blocks above the hit each one starts from, they fall from there to the floor
+      height: 5.0
+      # damage per blast, 4 is two hearts
+      damage: 4.0
+      blast-radius: 3.0
+      # how dense the nebula that opens on the target is
+      # 1.0 is about 250 placed particles a tick for 18 ticks, drop it if you ever see a spike
+      nebula-detail: 1.0
+
+  # a strength ii splash potion, throwing it throws you too, one use
+  dash-potion:
+    # what the cooldown bar calls it
+    short-name: "Dash"
+    # colour of this weapon on the cooldown row above the hotbar
+    hud-colour: "<#ff5c5c>"
+    name: "<red>Dash Splash Potion of Strength II"
+    lore:
+      - "<gray>Throw it and go with it"
+    cooldown-seconds: 0
+    # how hard you are thrown in blocks per tick
+    speed: 4.0
+
+  # marks where you stand and what shape you are in, brings you back there ten seconds later
+  # a killing blow before then brings you back early instead of killing you
+  # a trident that leaves a chain in whoever it hits
+  # right click reels them in, shift right click reels you to them
+  tether-trident:
+    # what the cooldown bar calls it
+    short-name: "Tether"
+    # colour of this weapon on the cooldown row above the hotbar
+    hud-colour: "<#5fe0c8>"
+    name: "<gradient:#7fe4d8:#1e889c><bold>Tether Trident</bold></gradient>"
+    lore:
+      - "<#7fe4d8>Throw it to hook a player for <duration>s"
+      - "<#7fe4d8>RMB reels them to you, Shift + RMB reels you to them"
+      - "<#7fe4d8>The chain snaps past <range> blocks"
+      - "<dark_gray><cooldown>s cooldown"
+    # starts the moment the chain attaches, not when the trident leaves your hand
+    cooldown-seconds: 40
+    # what a throw that hits nobody costs, so missing is cheap but not free
+    miss-cooldown-seconds: 8
+    # how long the chain holds
+    duration-seconds: 8
+    # blocks between the two of you before the chain snaps
+    range: 75.0
+    # how many pulls one chain is good for, the last one breaks it
+    max-yanks: 3
+    # ticks between pulls
+    yank-cooldown-ticks: 30
+    # blocks per tick you fly at them on a shift click
+    self-pull-speed: 1.1
+    # blocks per tick they are dragged at you on a plain click
+    pull-speed: 1.35
+    # how long one pull keeps dragging, it stops early once the two of you are close
+    pull-ticks: 16
+    # added upward push per tick so a flat pull is not eaten by gravity
+    pull-lift: 0.14
+    # blocks apart at which the drag lets go
+    pull-stop-distance: 2.0
+    # what the chain looks like
+    chain:
+      # model is the spectral chain from the FlameFFA pack, block is the vanilla iron chain
+      # with no pack needed, dust is the old line of light
+      mode: model
+      model: "flameffa:chain"
+      # blocks of chain in one model link display, three is what the model is built as
+      span-blocks: 3.0
+      # the most link displays one chain may use, longer chains stretch their links
+      max-links: 30
+      # how wide the links are, 1.0 is the model as drawn
+      thickness: 1.0
+      # how far the chain hangs, in blocks of sag per block of distance, and the most it ever sags
+      sag-per-block: 0.06
+      max-sag: 2.5
+      # how fast the bright pulse runs the chain, as a share of its length per pass
+      pulse-speed: 0.22
+      # how far the chain is sent to players, 1.0 is the vanilla 64 blocks
+      view-range: 0.8
+
+  phoenix-mace:
+    # what the cooldown bar calls it
+    short-name: "Phoenix"
+    # colour of this weapon on the cooldown row above the hotbar
+    hud-colour: "<#ff9a2e>"
+    name: "<gradient:#ffd74a:#e8262b><bold>Phoenix Mace</bold></gradient>"
+    lore:
+      - "<#ffb347>Shift + RMB to mark where you stand"
+      - "<#ffb347>10s later you are back there with that health and hunger"
+      - "<#ffb347>Dying before then sends you back instead"
+      - "<dark_gray><cooldown>s cooldown"
+    cooldown-seconds: 100
+    # seconds between the mark and the return
+    duration-seconds: 10
+
+  # every mace hit inside the window stacks, five stacks lights it up
+  # shift right click while it burns spends the buff on one blast
+  overkill-mace:
+    # what the cooldown bar calls it
+    short-name: "Overkill"
+    # colour of this weapon on the cooldown row above the hotbar
+    hud-colour: "<#ff3b00>"
+    name: "<gradient:#fff18a:#8e0b0b><bold>Overkill Mace</bold></gradient>"
+    lore:
+      - "<#ff9b3d>Land 5 hits within 6s to ignite it for <duration>s"
+      - "<#ff9b3d>While lit it gains Density X and Fire Aspect"
+      - "<#ff9b3d>Shift + RMB to blast everything near you, ends the buff"
+      - "<dark_gray><cooldown>s cooldown once the buff is over"
+    # the wait before stacks can build again, it starts the moment the buff ends
+    cooldown-seconds: 120
+    # how long the buff lasts if you never spend it
+    duration-seconds: 15
+    stacks-needed: 5
+    # a stack is lost if you do not land another hit inside this
+    stack-window-seconds: 6
+    # what the mace is enchanted to while lit
+    density-level: 10
+    fire-aspect-level: 3
+    wind-burst-level: 2
+    blast:
+      # true damage, 30 is fifteen hearts and goes through armour
+      damage: 30.0
+      radius: 9.0
+      knockback: 1.1
+    # hellfire, deep red and black with the odd bright orange, the mace itself never changes
+    fx:
+      # the aura while lit, a swarm of raid omen wisps round the body
+      aura: true
+      aura-density: 1.0
+      # wisps per pass, every 5 ticks
+      aura-omen: 8
+      # the wisp used everywhere the mace used to throw red dust, TRIAL_OMEN is the blue one
+      omen-particle: RAID_OMEN
+      # on uses the FlameFFA resource pack for the skull bar, off falls back to gradient text with glyphs
+      logo-glyph: true
+      # the nova, ticks it takes to swell to the edge and points per shell
+      nova-ticks: 5
+      nova-shell-points: 90
+      # ticks the ring of flame at the edge keeps burning after the nova
+      edge-burn-ticks: 14
+
+  # a ward in front of you that eats one hit and throws whoever landed it away
+  # no axe takes your guard down while it stands
+  aegis-shield:
+    short-name: "Aegis"
+    # colour of this weapon on the cooldown row above the hotbar
+    hud-colour: "<#7fc0ff>"
+    name: "<gradient:#dff6ff:#5aa7ff><bold>Aegis</bold></gradient>"
+    lore:
+      - "<#9de0ff>Shift + RMB to raise a ward for <duration>s"
+      - "<#9de0ff>It repels the first hit and throws them back"
+      - "<#9de0ff>Axes cannot break your guard while it holds"
+      - "<dark_gray><cooldown>s cooldown"
+    cooldown-seconds: 90
+    # how long the ward stands if nobody tests it
+    duration-seconds: 6
+    # blocks in front of your eyes the disc hangs
+    stand-off: 1.9
+    radius: 1.5
+    # how wide the front is, 1.0 is dead ahead only and 0.0 is a full half circle
+    arc: 0.35
+    # how hard whoever hit it is thrown back
+    repel-power: 1.6
+    repel-lift: 0.42
+    # the round golden ward drawn in front of you while the shield is actually held up
+    # translucent facets with a bright rim, six ribs, a ring of runes turning on the glass
+    # and one large sigil breathing in the middle, none of it is a block
+    visual:
+      # smooth is the modelled disc from the FlameFFA resource pack, one entity, round and unbroken
+      # facets is the text display dome that needs no pack
+      mode: smooth
+      # blocks across the disc, smooth mode only
+      smooth-size: 2.8
+      smooth-model: "flameffa:aegis"
+      # how far up from your feet the middle of the ward sits
+      height: 1.15
+      # how wide the dome is as an angle out from its middle, 46 is about three blocks across
+      radius-degrees: 46
+      # bands of facets from the middle to the rim, 3 is 26 facets, 4 is about 45
+      rings: 3
+      # each facet is drawn this much wider than its cell so no seams show through
+      overlap: 1.06
+      # the glass, denser in the middle and thinner toward the edge, 0 is invisible and 255 is solid
+      colour: "#ffa629"
+      centre-alpha: 112
+      alpha: 84
+      # the outermost ring is the rim and burns brighter
+      rim-colour: "#ffe58a"
+      rim-alpha: 150
+      # thin strips from the middle out toward the rim, 0 turns them off
+      # each sits on the same spoke as a rune and turns with it
+      ribs: 0
+      rib-width: 0.035
+      rib-alpha: 130
+      rib-from: 0.24
+      rib-to: 0.9
+      # glyphs turning on the face of the dome, 0 turns them off
+      runes: 15
+      rune-size: 0.32
+      rune-colour: "#fff4c8"
+      # where the ring sits, as a share of the radius, 1.0 would be on the rim
+      rune-band: 0.88
+      # how fast the ring turns, negative runs it the other way
+      rune-spin-degrees-per-tick: 1.0
+      # a slow sway on top of the turn, 0 is a steady turn
+      rune-wobble: 0.0
+      # the mark in the middle, read from sigil.png in this folder, drop your own in and reload
+      # particles draws it every pass with no entities and no resource pack
+      # font draws it as one crisp glyph and needs the FlameFFA resource pack on the server
+      sigil-mode: font
+      sigil-size: 2.00
+      sigil-colour: "#fff4c8"
+      # particles mode, how finely the png is sampled and how big each dot is
+      sigil-grid: 26
+      sigil-particle-size: 0.8
+      # font mode, the glyph the pack maps the sigil to
+      sigil-font: "flameffa:sigil"
+      sigil-font-char: "\uE000"
+      sigil-font-y-offset: 0.0
+      # ticks between one pulse rolling out from the middle and the next
+      pulse-ticks: 44
+      # the break, ticks the sigil takes to flare out and fade
+      sigil-fade-ticks: 6
+      # how far the ward is sent to players, 1.0 is the vanilla 64 blocks, 0.5 is 32
+      view-range: 0.6
+      # ticks between one redraw and the next, 2 is smooth, 3 or 4 halves the traffic
+      update-ticks: 2
+
+  # a netherite sword that throws you the way you are looking, ground or air alike
+  dash-sword:
+    short-name: "Dash"
+    # colour of this weapon on the cooldown row above the hotbar
+    hud-colour: "<#ffcf5e>"
+    name: "<gradient:#fff3c4:#ffa629><bold>Dash Sword</bold></gradient>"
+    lore:
+      - "<#ffd85e>Shift + RMB to dash where you look, works in the air"
+      - "<#ffd85e>No fall damage until you land"
+      - "<dark_gray><cooldown>s cooldown"
+    cooldown-seconds: 18
+    # blocks per tick on the first tick, re applied every tick of the dash
+    speed: 2.6
+    # ticks the push lasts, 6 at 2.6 is about 12 blocks
+    boost-ticks: 6
+    # share of the speed left on the last tick, so it glides out instead of stopping dead
+    tail: 0.6
+
+  dash-spear:
+    short-name: "Dash"
+    hud-colour: "<#ffcf5e>"
+    name: "<gradient:#fff3c4:#ffa629><bold>Dash Spear</bold></gradient>"
+    lore:
+      - "<#ffd85e>Shift + RMB to dash where you look, works in the air"
+      - "<#ffd85e>No fall damage until you land"
+      - "<dark_gray><cooldown>s cooldown"
+    cooldown-seconds: 18
+    speed: 2.6
+    boost-ticks: 6
+    tail: 0.6
+
+  dash-mace:
+    short-name: "Dash"
+    hud-colour: "<#ffcf5e>"
+    name: "<gradient:#fff3c4:#ffa629><bold>Dash Mace</bold></gradient>"
+    lore:
+      - "<#ffd85e>Shift + RMB to dash where you look, works in the air"
+      - "<#ffd85e>No fall damage until you land"
+      - "<dark_gray><cooldown>s cooldown"
+    cooldown-seconds: 18
+    speed: 2.6
+    boost-ticks: 6
+    tail: 0.6
+
+  cobweb-axe:
+    short-name: "Web Axe"
+    # colour of this weapon on the cooldown row above the hotbar
+    hud-colour: "<#e0e6ec>"
+    name: "<gradient:#f4f4f4:#9aa3ad><bold>Cobweb Axe</bold></gradient>"
+    lore:
+      - "<#d7dde3>Shift + RMB to cut every cobweb around you"
+      - "<#d7dde3>Clears a <size>x<size> area"
+      - "<dark_gray><cooldown>s cooldown"
+    cooldown-seconds: 35
+    # width and depth of the area centred on you, odd numbers
+    size: 9
+    # how tall the area is, centred on your feet
+    height: 9
+
+  saturation-candle:
+    short-name: "Candle"
+    # colour of this weapon on the cooldown row above the hotbar
+    hud-colour: "<#ffb347>"
+    name: "<gradient:#ffd27a:#ff8c1a><bold>Saturation Candle</bold></gradient>"
+    lore:
+      - "<#ffc46b>Right click to light it"
+      - "<#ffc46b>Saturation <level_roman> for <duration>s"
+      - "<dark_gray><cooldown>s cooldown"
+    cooldown-seconds: 75
+    duration-seconds: 6
+    # 2 is saturation two
+    level: 2
+
+  stun-mace:
+    short-name: "Stun"
+    # colour of this weapon on the cooldown row above the hotbar
+    hud-colour: "<#c4a6ff>"
+    name: "<gradient:#e6d7ff:#8a5cff><bold>Stun Mace</bold></gradient>"
+    lore:
+      - "<#c9b3ff>Every hit pins them where they are"
+      - "<#c9b3ff>for <stun>s, no moving no jumping no falling"
+    # no cooldown, the stun itself has the immunity below
+    cooldown-seconds: 0
+    # how long a hit pins them
+    stun-ticks: 20
+    # seconds after a stun ends before the same player can be pinned again
+    immune-seconds: 3
+
+  reaper-scythe:
+    short-name: "Cleave"
+    # colour of this weapon on the cooldown row above the hotbar
+    hud-colour: "<#c2122a>"
+    name: "<gradient:#e8e8f0:#8b0f1f><bold>Reaper Scythe</bold></gradient>"
+    lore:
+      - "<#d98a95>Smash hits steal 4 extra hearts for you"
+      - "<#d98a95>Shift + RMB cleaves everyone in front for 4 hearts"
+      - "<dark_gray><cooldown>s cooldown"
+    model: "flameffa:reaper_scythe"
+    cooldown-seconds: 10
+    # hearts given back on every smash hit that lands
+    lifesteal-hearts: 4.0
+    # hearts the cleave takes off after armour, protection and resistance, the same on any gear
+    cleave-hearts: 4.0
+    # how far and how wide the cleave reaches in front of you
+    range: 4.0
+    arc-degrees: 120
+    cleave-knockback: 0.6
+
+killstreaks:
+  enabled: true
+  # a one line announcement at each of these, rewards are set separately below
+  # leave a number out and nothing is said, even if it pays keys
+  announce-at: [5, 10, 15, 20, 25, 30, 35, 40, 45, 50]
+  # streak count to reward map
+  rewards:
+    5:
+      broadcast: true
+      keys:
+        common: 1
+    10:
+      broadcast: true
+      keys:
+        common: 2
+    25:
+      broadcast: true
+      keys:
+        rare: 1
+
+staff:
+  # broadcast every staff action to other staff
+  broadcast-actions: true
+  # freeze settings for screenshares
+  freeze:
+    # command run if a frozen player logs out, {player} is replaced
+    logout-command: "ban {player} 30d Logged out while frozen"
+    allowed-commands:
+      - "/msg"
+      - "/r"
+      - "/discord"
+  vanish:
+    # hide vanished staff from the player list
+    hide-from-tab: true
+
+tebex:
+  # console only grant commands are always enabled
+  # queue grants for offline players and deliver on join
+  queue-offline: true
+  # a renewal adds its days onto whatever is left instead of resetting the clock
+  # off means every grant restarts the countdown, which costs an early renewer their days
+  stack-renewals: true
+  # how many days of ledger history to keep
+  ledger-retention-days: 365
+
+# the resource pack is served by this plugin from a spare port, so the link never expires
+# drop a new pack.zip into plugins/FlameFFACore and restart, the hash is worked out on start
+resource-pack:
+  enabled: false
+  file: pack.zip
+  port: 0
+  # what players connect to, the node address the port is on
+  public-host: ""
+  bind: 0.0.0.0
+  required: true
+
+ender-vault:
+  # kit gear may be stored in the ender chest
+  allow-kit-items: true
