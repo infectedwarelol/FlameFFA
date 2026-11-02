@@ -59,3 +59,6 @@ permissions:
   flameholo.admin:
     description: Use /holo
     default: op
+  flametrims.use:
+    description: open /trim
+    default: true
