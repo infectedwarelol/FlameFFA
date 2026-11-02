@@ -8,6 +8,8 @@ import io.papermc.paper.entity.TeleportFlag;
 import io.papermc.paper.entity.TeleportFlag.Relative;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
+import dev.flamesentinell.flameffacore.util.Tasks;
 import net.kyori.adventure.text.Component;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
@@ -70,7 +72,7 @@ public final class ProjectionSpear implements CustomWeapon {
       int travel = Math.max(2, cfg.getInt(this.path() + ".travel-ticks", 4));
       int linger = Math.max(0, cfg.getInt(this.path() + ".linger-ticks", 8));
       Location before = player.getLocation();
-      Bukkit.getScheduler().runTask(plugin, () -> {
+      plugin.tasks().entity(player, () -> {
          if (player.isOnline() && !player.isDead()) {
             double speed = player.getWorld().equals(before.getWorld()) ? player.getLocation().distance(before) : 0.0;
             double range = Math.min(maxRange, base + speed * boost);
@@ -93,50 +95,50 @@ public final class ProjectionSpear implements CustomWeapon {
             double spacing = distance / (frames + 1);
             float yaw = from.getYaw();
             float pitch = from.getPitch();
-            List<Mannequin> ghosts = new ArrayList<>();
+            List<Mannequin> ghosts = new CopyOnWriteArrayList<>();
 
             for (int i = 1; i <= frames; i++) {
                Location at = from.clone().add(step.clone().multiply(i * spacing));
                at.setYaw(yaw);
                at.setPitch(pitch);
                long delay = Math.round((double)(i - 1) * travel / frames);
-               Bukkit.getScheduler().runTaskLater(plugin, () -> {
+               plugin.tasks().regionLater(at, () -> {
                   if (player.isOnline()) {
                      ghosts.add(this.ghost(player, at, held));
                   }
                }, delay);
             }
 
-            Bukkit.getScheduler()
-               .runTaskLater(
-                  plugin,
-                  () -> {
-                     if (player.isOnline() && !player.isDead()) {
-                        Location land = settled.clone();
-                        land.setYaw(player.getLocation().getYaw());
-                        land.setPitch(player.getLocation().getPitch());
-                        float fall = player.getFallDistance();
-                        player.teleport(
-                           land,
-                           TeleportCause.PLUGIN,
-                           new TeleportFlag[]{Relative.VELOCITY_X, Relative.VELOCITY_Y, Relative.VELOCITY_Z, Relative.VELOCITY_ROTATION}
-                        );
-                        player.setFallDistance(fall);
-                     } else {
-                        clear(ghosts);
-                     }
-                  },
-                  travel
-               );
-            Bukkit.getScheduler().runTaskLater(plugin, () -> clear(ghosts), travel + linger);
+            plugin.tasks().entityLater(player, () -> {
+               if (player.isOnline() && !player.isDead()) {
+                  Location land = settled.clone();
+                  land.setYaw(player.getLocation().getYaw());
+                  land.setPitch(player.getLocation().getPitch());
+                  float fall = player.getFallDistance();
+                  TeleportFlag[] keep = new TeleportFlag[]{Relative.VELOCITY_X, Relative.VELOCITY_Y, Relative.VELOCITY_Z, Relative.VELOCITY_ROTATION};
+                  if (Tasks.FOLIA) {
+                     player.teleportAsync(land, TeleportCause.PLUGIN, keep).thenAccept(moved -> plugin.tasks().runOn(player, () -> player.setFallDistance(fall)));
+                  } else {
+                     player.teleport(land, TeleportCause.PLUGIN, keep);
+                     player.setFallDistance(fall);
+                  }
+               } else {
+                  clear(plugin, ghosts);
+               }
+            }, travel);
+            plugin.tasks().globalLater(() -> clear(plugin, ghosts), travel + linger);
          }
       }
    }
 
-   private static void clear(List<Mannequin> ghosts) {
+   private static void clear(FlameFFACore plugin, List<Mannequin> ghosts) {
       for (Mannequin ghost : ghosts) {
-         if (ghost.isValid()) {
-            ghost.remove();
+         if (ghost != null) {
+            plugin.tasks().runOn(ghost, () -> {
+               if (ghost.isValid()) {
+                  ghost.remove();
+               }
+            });
          }
       }
 

@@ -153,7 +153,7 @@ public final class OverkillFx {
          double radius = 0.6 + r * 0.55;
          int points = 12 + r * 6;
          Particle wisp = this.omen();
-         Bukkit.getScheduler().runTaskLater(this.plugin, () -> {
+         this.plugin.tasks().regionLater(at, () -> {
             for (int i = 0; i < points; i++) {
                double a = i * Math.PI * 2.0 / points;
                Location p = at.clone().add(Math.cos(a) * radius, 0.0, Math.sin(a) * radius);
@@ -227,7 +227,7 @@ public final class OverkillFx {
 
       for (int f = 0; f < frames; f++) {
          double r = radius * (f + 1) / frames;
-         Bukkit.getScheduler().runTaskLater(this.plugin, () -> {
+         this.plugin.tasks().regionLater(core, () -> {
             for (int i = 0; i < shell; i++) {
                double y = 1.0 - 2.0 * (i + 0.5) / shell;
                double ring = Math.sqrt(1.0 - y * y);
@@ -257,7 +257,7 @@ public final class OverkillFx {
 
       for (int t = frames; t < frames + burn; t += 2) {
          int age = t - frames;
-         Bukkit.getScheduler().runTaskLater(this.plugin, () -> {
+         this.plugin.tasks().regionLater(centre, () -> {
             for (int i = 0; i < points; i++) {
                double a = i * Math.PI * 2.0 / points + age * 0.05;
                Location p = centre.clone().add(Math.cos(a) * radius, 0.1, Math.sin(a) * radius);

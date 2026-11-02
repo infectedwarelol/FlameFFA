@@ -3,12 +3,10 @@ package dev.flamesentinell.flameffacore.weapon;
 import dev.flamesentinell.flameffacore.FlameFFACore;
 import io.papermc.paper.event.entity.EntityKnockbackEvent;
 import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.UUID;
-import java.util.Map.Entry;
 import org.bukkit.Bukkit;
 import org.bukkit.Color;
 import org.bukkit.Location;
@@ -39,8 +37,8 @@ public final class StunMace implements CustomWeapon, Listener {
    private static final NamespacedKey JUMP_KEY = new NamespacedKey("flameffacore", "stun_jump");
    private static final DustOptions STAR = new DustOptions(Color.fromRGB(255, 243, 154), 0.9F);
    private final FlameFFACore plugin;
-   private final Map<UUID, Integer> stunned = new HashMap<>();
-   private final Map<UUID, Integer> immune = new HashMap<>();
+   private final Map<UUID, Integer> stunned = new ConcurrentHashMap<>();
+   private final Map<UUID, Integer> immune = new ConcurrentHashMap<>();
 
    public StunMace(FlameFFACore plugin) {
       this.plugin = plugin;
@@ -162,29 +160,26 @@ public final class StunMace implements CustomWeapon, Listener {
 
    @Override
    public void tick(FlameFFACore plugin) {
-      if (this.stunned.isEmpty()) {
-         if (!this.immune.isEmpty()) {
-            int now = Bukkit.getCurrentTick();
-            this.immune.values().removeIf(until -> until <= now);
-         }
-      } else {
-         int now = Bukkit.getCurrentTick();
-         Iterator<Entry<UUID, Integer>> it = this.stunned.entrySet().iterator();
+      int now = Bukkit.getCurrentTick();
+      if (!this.immune.isEmpty()) {
+         this.immune.values().removeIf(until -> until <= now);
+      }
 
-         while (it.hasNext()) {
-            Entry<UUID, Integer> entry = it.next();
-            Player player = Bukkit.getPlayer(entry.getKey());
-            if (player != null && player.isOnline()) {
-               if (entry.getValue() > now && !player.isDead()) {
-                  player.setVelocity(new Vector(0, 0, 0));
-                  this.stars(player, now);
-               } else {
-                  this.release(player);
-                  it.remove();
-               }
-            } else {
-               it.remove();
-            }
+      if (!this.stunned.isEmpty()) {
+         this.stunned.keySet().removeIf(uuid -> Bukkit.getPlayer(uuid) == null);
+      }
+   }
+
+   @Override
+   public void tick(FlameFFACore plugin, Player player) {
+      Integer until = this.stunned.get(player.getUniqueId());
+      if (until != null) {
+         int now = Bukkit.getCurrentTick();
+         if (until > now && !player.isDead()) {
+            player.setVelocity(new Vector(0, 0, 0));
+            this.stars(player, now);
+         } else if (this.stunned.remove(player.getUniqueId(), until)) {
+            this.release(player);
          }
       }
    }

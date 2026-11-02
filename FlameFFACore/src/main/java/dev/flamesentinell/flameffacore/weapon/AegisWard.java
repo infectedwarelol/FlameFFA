@@ -11,6 +11,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.UUID;
 import java.util.Map.Entry;
 import java.util.concurrent.ThreadLocalRandom;
@@ -19,6 +20,7 @@ import net.kyori.adventure.key.Key;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.TextComponent;
 import net.kyori.adventure.text.format.TextColor;
+import dev.flamesentinell.flameffacore.util.Tasks;
 import org.bukkit.Bukkit;
 import org.bukkit.Color;
 import org.bukkit.Location;
@@ -54,7 +56,7 @@ public final class AegisWard {
    private int sigilGrid = -1;
    private final FlameFFACore plugin;
    private final String path;
-   private final Map<UUID, AegisWard.Live> live = new HashMap<>();
+   private final Map<UUID, AegisWard.Live> live = new ConcurrentHashMap<>();
 
    public AegisWard(FlameFFACore plugin, String path) {
       this.plugin = plugin;
@@ -232,7 +234,7 @@ public final class AegisWard {
             at.setPitch(face[1]);
             TextDisplay display = i < ward.facets.size() ? ward.facets.get(i) : null;
             if (display != null && !display.isDead()) {
-               display.teleport(at);
+               Tasks.move(display, at);
             } else {
                boolean rim = cell.ring() == bands - 1;
                display = this.facet(world, at, cell.width(), cell.height(), roll, rim ? this.rimFill() : this.fill(cell.ring(), bands), ward, fresh);
@@ -319,7 +321,7 @@ public final class AegisWard {
       at.setPitch(0.0F);
       Transformation full = new Transformation(new Vector3f(), new Quaternionf(), new Vector3f(scale, scale, scale), new Quaternionf());
       if (ward.disc != null && !ward.disc.isDead()) {
-         ward.disc.teleport(at);
+         Tasks.move(ward.disc, at);
       } else {
          ItemStack stack = ItemStack.of(Material.PAPER);
          stack.setData(DataComponentTypes.ITEM_MODEL, Key.key(this.plugin.configs().main().getString(this.path + ".smooth-model", "flameffa:aegis")));
@@ -364,7 +366,7 @@ public final class AegisWard {
          at.setPitch(face[1]);
          TextDisplay rib = i < ward.ribs.size() ? ward.ribs.get(i) : null;
          if (rib != null && !rib.isDead()) {
-            rib.teleport(at);
+            Tasks.move(rib, at);
             rib.setInterpolationDelay(0);
             rib.setInterpolationDuration(2);
             rib.setTransformation(quad(width, length, roll));
@@ -418,7 +420,7 @@ public final class AegisWard {
          at.setPitch(face[1]);
          TextDisplay rune = i < ward.runes.size() ? ward.runes.get(i) : null;
          if (rune != null && !rune.isDead()) {
-            rune.teleport(at);
+            Tasks.move(rune, at);
             rune.setInterpolationDelay(0);
             rune.setInterpolationDuration(2);
             rune.setTransformation(glyph(size, roll));
@@ -566,7 +568,7 @@ public final class AegisWard {
          at.setPitch(0.0F);
          TextDisplay display = ward.sigil.isEmpty() ? null : ward.sigil.get(0);
          if (display != null && !display.isDead()) {
-            display.teleport(at);
+            Tasks.move(display, at);
             display.setInterpolationDelay(0);
             display.setInterpolationDuration(2);
             display.setTransformation(full);
@@ -699,7 +701,7 @@ public final class AegisWard {
 
                for (int step = 1; step <= ticks; step++) {
                   int alpha = 255 - 255 * step / ticks;
-                  Bukkit.getScheduler().runTaskLater(this.plugin, () -> {
+                  this.plugin.tasks().entityLater(dx, () -> {
                      if (!dx.isDead()) {
                         dx.setTextOpacity((byte)Math.max(4, alpha));
                      }
@@ -710,13 +712,11 @@ public final class AegisWard {
             }
          }
 
-         Bukkit.getScheduler().runTaskLater(this.plugin, () -> {
-            for (Display dxx : flare) {
-               if (dxx != null && !dxx.isDead()) {
-                  dxx.remove();
-               }
+         for (Display dxx : flare) {
+            if (dxx != null && !dxx.isDead()) {
+               this.plugin.tasks().entityLater(dxx, dxx::remove, ticks + 1L);
             }
-         }, ticks + 1L);
+         }
          ward.facets.clear();
          ward.ribs.clear();
          ward.runes.clear();
@@ -800,6 +800,10 @@ public final class AegisWard {
    }
 
    public int sweepLeftovers() {
+      if (Tasks.FOLIA) {
+         return 0;
+      }
+
       int gone = 0;
 
       for (World world : Bukkit.getWorlds()) {

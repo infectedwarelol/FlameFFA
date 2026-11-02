@@ -2,9 +2,9 @@ package dev.flamesentinell.flameffacore.weapon;
 
 import dev.flamesentinell.flameffacore.FlameFFACore;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.UUID;
 import org.bukkit.Bukkit;
 import org.bukkit.GameMode;
@@ -26,17 +26,17 @@ import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.inventory.EquipmentSlot;
 import org.bukkit.inventory.ItemStack;
-import org.bukkit.scheduler.BukkitTask;
+import io.papermc.paper.threadedregions.scheduler.ScheduledTask;
 import org.bukkit.util.Vector;
 
 public final class TetherTrident implements CustomWeapon, Listener {
    public static final String ID = "tether-trident";
    private final FlameFFACore plugin;
    private final TetherChain chain;
-   private final Map<UUID, UUID> inFlight = new HashMap<>();
-   private final Map<UUID, TetherTrident.Tether> tethers = new HashMap<>();
-   private final Map<UUID, BukkitTask> drags = new HashMap<>();
-   private final Map<UUID, BukkitTask> homing = new HashMap<>();
+   private final Map<UUID, UUID> inFlight = new ConcurrentHashMap<>();
+   private final Map<UUID, TetherTrident.Tether> tethers = new ConcurrentHashMap<>();
+   private final Map<UUID, ScheduledTask> drags = new ConcurrentHashMap<>();
+   private final Map<UUID, ScheduledTask> homing = new ConcurrentHashMap<>();
 
    public TetherTrident(FlameFFACore var1) {
       this.plugin = var1;
@@ -124,7 +124,7 @@ public final class TetherTrident implements CustomWeapon, Listener {
    private void home(Projectile var1, Player var2) {
       UUID var3 = var1.getUniqueId();
       double var4 = Math.max(0.0, Math.min(1.0, this.plugin.configs().main().getDouble(this.path() + ".homing-turn", 0.3)));
-      this.homing.put(var3, Bukkit.getScheduler().runTaskTimer(this.plugin, () -> {
+      ScheduledTask var13 = this.plugin.tasks().entityTimer(var1, task -> {
          boolean var6 = var1 instanceof AbstractArrow var7 && var7.isInBlock();
          if (var1.isValid() && !var6 && this.inFlight.containsKey(var3) && var2.isOnline() && !var2.isDead() && var2.getWorld().equals(var1.getWorld())) {
             Vector var12 = var1.getVelocity();
@@ -141,11 +141,14 @@ public final class TetherTrident implements CustomWeapon, Listener {
          } else {
             this.stopHoming(var3);
          }
-      }, 1L, 1L));
+      }, () -> this.stopHoming(var3), 1L, 1L);
+      if (var13 != null) {
+         this.homing.put(var3, var13);
+      }
    }
 
    private void stopHoming(UUID var1) {
-      BukkitTask var2 = this.homing.remove(var1);
+      ScheduledTask var2 = this.homing.remove(var1);
       if (var2 != null) {
          var2.cancel();
       }
@@ -201,7 +204,7 @@ public final class TetherTrident implements CustomWeapon, Listener {
       this.chain.attach(var1, var2);
       this.plugin.cooldownBar().flash(var1, this.plugin.configs().msg("weapon.tether-attached", "player", var2.getName()));
       this.plugin.cooldownBar().flash(var2, this.plugin.configs().msg("weapon.tether-hooked", "player", var1.getName()));
-      var5.chain = Bukkit.getScheduler().runTaskTimer(this.plugin, () -> this.draw(var1), 0L, 2L);
+      var5.chain = this.plugin.tasks().entityTimer(var1, task -> this.draw(var1), null, 0L, 2L);
    }
 
    private void draw(Player var1) {
@@ -303,7 +306,7 @@ public final class TetherTrident implements CustomWeapon, Listener {
       UUID var10 = var1.getUniqueId();
       this.stopDrag(var10);
       int[] var11 = new int[]{var9};
-      this.drags.put(var10, Bukkit.getScheduler().runTaskTimer(this.plugin, () -> {
+      ScheduledTask var13 = this.plugin.tasks().entityTimer(var1, task -> {
          if (--var11[0] >= 0 && var1.isOnline() && !var1.isDead() && var2.isOnline() && var2.getWorld().equals(var1.getWorld())) {
             Vector var11x = var2.getLocation().add(0.0, 0.8, 0.0).toVector().subtract(var1.getLocation().toVector());
             if (!(var11x.length() <= var7) && !this.inSpawn(var1) && !this.inSpawn(var2)) {
@@ -317,11 +320,14 @@ public final class TetherTrident implements CustomWeapon, Listener {
          } else {
             this.stopDrag(var10);
          }
-      }, 0L, 1L));
+      }, () -> this.stopDrag(var10), 0L, 1L);
+      if (var13 != null) {
+         this.drags.put(var10, var13);
+      }
    }
 
    private void stopDrag(UUID var1) {
-      BukkitTask var2 = this.drags.remove(var1);
+      ScheduledTask var2 = this.drags.remove(var1);
       if (var2 != null) {
          var2.cancel();
       }
@@ -348,7 +354,7 @@ public final class TetherTrident implements CustomWeapon, Listener {
          if (this.inFlight.containsKey(var1x)) {
             return false;
          } else {
-            BukkitTask var2 = this.homing.get(var1x);
+            ScheduledTask var2 = this.homing.get(var1x);
             if (var2 != null) {
                var2.cancel();
             }
@@ -375,6 +381,6 @@ public final class TetherTrident implements CustomWeapon, Listener {
       int endsAt;
       int nextYank;
       int yanksLeft;
-      BukkitTask chain;
+      ScheduledTask chain;
    }
 }

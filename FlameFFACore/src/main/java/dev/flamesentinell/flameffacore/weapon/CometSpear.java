@@ -2,9 +2,9 @@ package dev.flamesentinell.flameffacore.weapon;
 
 import dev.flamesentinell.flameffacore.FlameFFACore;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.UUID;
 import java.util.concurrent.ThreadLocalRandom;
 import org.bukkit.Bukkit;
@@ -26,14 +26,13 @@ import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.inventory.ItemStack;
-import org.bukkit.scheduler.BukkitTask;
 import org.bukkit.util.RayTraceResult;
 import org.bukkit.util.Vector;
 
 public final class CometSpear implements CustomWeapon, Listener {
    public static final String ID = "comet-spear";
    private final FlameFFACore plugin;
-   private final Map<UUID, Integer> dashing = new HashMap<>();
+   private final Map<UUID, Integer> dashing = new ConcurrentHashMap<>();
    private static final DustOptions DEEP = new DustOptions(Color.fromRGB(27, 42, 140), 1.4F);
    private static final DustOptions VIOLET = new DustOptions(Color.fromRGB(123, 63, 214), 1.2F);
    private static final DustOptions CYAN = new DustOptions(Color.fromRGB(95, 212, 255), 0.9F);
@@ -161,9 +160,8 @@ public final class CometSpear implements CustomWeapon, Listener {
    }
 
    private void shimmer(FlameFFACore plugin, Player player, int ticks) {
-      BukkitTask[] handle = new BukkitTask[1];
       int[] left = new int[]{ticks};
-      handle[0] = Bukkit.getScheduler().runTaskTimer(plugin, () -> {
+      plugin.tasks().entityTimer(player, task -> {
          if (--left[0] >= 0 && player.isOnline() && plugin.weapons().isHolding(player)) {
             player.setVelocity(new Vector(0, 0, 0));
             double angle = (ticks - left[0]) * 0.45;
@@ -178,9 +176,9 @@ public final class CometSpear implements CustomWeapon, Listener {
 
             world.spawnParticle(Particle.END_ROD, c, 1, 0.5, 0.5, 0.5, 0.0);
          } else {
-            handle[0].cancel();
+            task.cancel();
          }
-      }, 0L, 1L);
+      }, null, 0L, 1L);
    }
 
    @Override
@@ -261,9 +259,8 @@ public final class CometSpear implements CustomWeapon, Listener {
    private void flight(FlameFFACore plugin, Player player, Vector heading, double speed, int boostTicks, int trailTicks) {
       int ticks = Math.max(boostTicks, trailTicks);
       if (ticks > 0) {
-         BukkitTask[] handle = new BukkitTask[1];
          int[] i = new int[]{0};
-         handle[0] = Bukkit.getScheduler().runTaskTimer(plugin, () -> {
+         plugin.tasks().entityTimer(player, task -> {
             boolean landed = i[0] > 2 && player.isOnGround();
             if (i[0] < ticks && player.isOnline() && !player.isDead() && !landed) {
                if (heading != null && i[0] < boostTicks) {
@@ -284,9 +281,9 @@ public final class CometSpear implements CustomWeapon, Listener {
 
                i[0]++;
             } else {
-               handle[0].cancel();
+               task.cancel();
             }
-         }, 0L, 1L);
+         }, null, 0L, 1L);
       }
    }
 
@@ -345,12 +342,11 @@ public final class CometSpear implements CustomWeapon, Listener {
             comet[i][5] = blast * (0.8 + rng.nextDouble() * 0.45);
          }
 
-         BukkitTask[] handle = new BukkitTask[1];
          int[] age = new int[]{0};
          int[] landed = new int[]{0};
          boolean report = caster == null;
          Location cursor = impact.clone();
-         handle[0] = Bukkit.getScheduler().runTaskTimer(this.plugin, () -> {
+         this.plugin.tasks().regionTimer(impact, task -> {
             age[0]++;
             boolean any = false;
 
@@ -384,7 +380,7 @@ public final class CometSpear implements CustomWeapon, Listener {
             }
 
             if (!any) {
-               handle[0].cancel();
+               task.cancel();
                if (report) {
                   this.plugin.getSLF4JLogger().info("comet test: {} comets, {} landed and burst, {} ticks", new Object[]{count, landed[0], age[0]});
                }
@@ -407,12 +403,11 @@ public final class CometSpear implements CustomWeapon, Listener {
       int armPoints = (int)Math.max(4.0, 11.0 * detail);
       int ringPoints = (int)Math.max(10.0, 44.0 * detail);
       Location p = at.clone();
-      BukkitTask[] handle = new BukkitTask[1];
       int[] age = new int[]{0};
-      handle[0] = Bukkit.getScheduler().runTaskTimer(this.plugin, () -> {
+      this.plugin.tasks().regionTimer(p, task -> {
          int t = (int)(age[0]++);
          if (t >= 18) {
-            handle[0].cancel();
+            task.cancel();
          } else {
             double k = (double)t / 18.0;
             double ease = 1.0 - Math.pow(1.0 - k, 3.0);
@@ -485,12 +480,11 @@ public final class CometSpear implements CustomWeapon, Listener {
    }
 
    private void shockwave(World world, Location impact, double spread) {
-      BukkitTask[] handle = new BukkitTask[1];
       double[] r = new double[]{0.4};
       double edge = Math.max(3.0, spread * 0.8);
-      handle[0] = Bukkit.getScheduler().runTaskTimer(this.plugin, () -> {
+      this.plugin.tasks().regionTimer(impact, task -> {
          if (r[0] > edge) {
-            handle[0].cancel();
+            task.cancel();
          } else {
             int points = (int)Math.max(8.0, r[0] * 10.0);
 

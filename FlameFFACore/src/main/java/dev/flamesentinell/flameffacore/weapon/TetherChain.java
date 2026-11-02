@@ -3,13 +3,14 @@ package dev.flamesentinell.flameffacore.weapon;
 import dev.flamesentinell.flameffacore.FlameFFACore;
 import io.papermc.paper.datacomponent.DataComponentTypes;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.UUID;
 import java.util.concurrent.ThreadLocalRandom;
 import net.kyori.adventure.key.Key;
+import dev.flamesentinell.flameffacore.util.Tasks;
 import org.bukkit.Bukkit;
 import org.bukkit.Color;
 import org.bukkit.Location;
@@ -38,7 +39,7 @@ public final class TetherChain {
    private static final DustOptions BRIGHT = new DustOptions(Color.fromRGB(255, 255, 255), 1.1F);
    private final FlameFFACore plugin;
    private final String path;
-   private final Map<UUID, TetherChain.Live> live = new HashMap<>();
+   private final Map<UUID, TetherChain.Live> live = new ConcurrentHashMap<>();
 
    public TetherChain(FlameFFACore plugin, String path) {
       this.plugin = plugin;
@@ -113,7 +114,7 @@ public final class TetherChain {
          Location at = mid.toLocation(world);
          Display display = i < ward.links.size() ? ward.links.get(i) : null;
          if (display != null && !display.isDead()) {
-            display.teleport(at);
+            Tasks.move(display, at);
             display.setInterpolationDelay(0);
             display.setInterpolationDuration(2);
             display.setTransformation(t);
@@ -275,13 +276,11 @@ public final class TetherChain {
             }
          }
 
-         Bukkit.getScheduler().runTaskLater(this.plugin, () -> {
-            for (Display dx : gone) {
-               if (dx != null && !dx.isDead()) {
-                  dx.remove();
-               }
+         for (Display dx : gone) {
+            if (dx != null && !dx.isDead()) {
+               this.plugin.tasks().entityLater(dx, dx::remove, ticks + 1L);
             }
-         }, ticks + 1L);
+         }
       }
    }
 
@@ -297,6 +296,10 @@ public final class TetherChain {
    }
 
    public int sweepLeftovers() {
+      if (Tasks.FOLIA) {
+         return 0;
+      }
+
       int gone = 0;
 
       for (World world : Bukkit.getWorlds()) {

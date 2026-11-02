@@ -4,10 +4,13 @@ import dev.flamesentinell.flameffacore.FlameFFACore;
 import io.papermc.paper.datacomponent.DataComponentTypes;
 import io.papermc.paper.datacomponent.item.UseCooldown;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+import io.papermc.paper.threadedregions.scheduler.ScheduledTask;
+import dev.flamesentinell.flameffacore.util.Tasks;
 import java.util.UUID;
 import java.util.Map.Entry;
 import net.kyori.adventure.key.Key;
@@ -61,15 +64,15 @@ public final class RocketMace implements CustomWeapon, Listener {
    public static final String ID = "rocket-mace";
    private final FlameFFACore plugin;
    private final NamespacedKey standIn;
-   private final Map<UUID, RocketMace.Flight> flights = new HashMap<>();
-   private final Map<UUID, RocketMace.Pin> pins = new HashMap<>();
-   private final Map<UUID, Integer> passiveReady = new HashMap<>();
+   private final Map<UUID, RocketMace.Flight> flights = new ConcurrentHashMap<>();
+   private final Map<UUID, RocketMace.Pin> pins = new ConcurrentHashMap<>();
+   private final Map<UUID, Integer> passiveReady = new ConcurrentHashMap<>();
+   private final Set<UUID> ticking = ConcurrentHashMap.newKeySet();
    private static final Key RETURN_GROUP = Key.key("flameffa", "rocket_return");
 
    public RocketMace(FlameFFACore var1) {
       this.plugin = var1;
       this.standIn = new NamespacedKey(var1, "rocket_return");
-      Bukkit.getScheduler().runTaskTimer(var1, this::everyTick, 1L, 1L);
    }
 
    @Override
@@ -144,6 +147,7 @@ public final class RocketMace implements CustomWeapon, Listener {
                   var1x.setVelocity(new Vector(0.0, -0.1, 0.0));
                });
                this.pins.put(var3.getUniqueId(), new RocketMace.Pin(var7, var9 + var5));
+               this.ensureTicker(var3);
                this.plugin.antiCheat().open(var3, var5 + 20);
                var6.playSound(var3.getLocation(), Sound.ENTITY_FIREWORK_ROCKET_LAUNCH, 1.0F, 0.8F);
             }
@@ -151,11 +155,15 @@ public final class RocketMace implements CustomWeapon, Listener {
       }
    }
 
-   private void tickPins(int var1) {
+   private void tickPins(int var1, UUID only) {
       Iterator var2 = this.pins.entrySet().iterator();
 
       while (var2.hasNext()) {
          Entry var3 = (Entry)var2.next();
+         if (!only.equals(var3.getKey())) {
+            continue;
+         }
+
          Player var4 = Bukkit.getPlayer((UUID)var3.getKey());
          RocketMace.Pin var5 = (RocketMace.Pin)var3.getValue();
          if (var4 != null && !var4.isDead() && var1 < var5.until() && !var4.isOnGround() && !var4.isInWater()) {
@@ -163,7 +171,7 @@ public final class RocketMace implements CustomWeapon, Listener {
             var4.setVelocity(new Vector(var6.getX() * 0.9, -this.cfg().getDouble(this.path() + ".pin-speed", 1.2), var6.getZ() * 0.9));
             var4.setFallDistance(0.0F);
             if (var5.rocket().isValid()) {
-               var5.rocket().teleport(var4.getEyeLocation().add(0.0, 0.35, 0.0));
+               Tasks.move(var5.rocket(), var4.getEyeLocation().add(0.0, 0.35, 0.0));
                var5.rocket().setVelocity(new Vector(0.0, -0.1, 0.0));
             }
 
@@ -220,6 +228,7 @@ public final class RocketMace implements CustomWeapon, Listener {
                   }
                );
             this.flights.put(var2.getUniqueId(), var7);
+            this.ensureTicker(var2);
             var2.getWorld().playSound(var8, Sound.ENTITY_FIREWORK_ROCKET_LAUNCH, 1.0F, 1.1F);
             var2.getWorld().playSound(var8, Sound.ITEM_TRIDENT_THROW, 1.0F, 0.7F);
             return true;
@@ -352,7 +361,7 @@ public final class RocketMace implements CustomWeapon, Listener {
       }
    }
 
-   private void tickFlights() {
+   private void tickFlights(UUID only) {
       double var1 = this.cfg().getDouble(this.path() + ".hit-radius", 0.75);
       Iterator var3 = this.flights.entrySet().iterator();
 
@@ -364,7 +373,12 @@ public final class RocketMace implements CustomWeapon, Listener {
                return;
             }
 
-            var4 = (RocketMace.Flight)((Entry)var3.next()).getValue();
+            Entry var25 = (Entry)var3.next();
+            if (!only.equals(var25.getKey())) {
+               continue;
+            }
+
+            var4 = (RocketMace.Flight)var25.getValue();
             var5 = Bukkit.getPlayer(var4.owner);
             if (var5 != null && var4.display != null && var4.display.isValid() && var5.getWorld() == var4.at.getWorld()) {
                var4.age++;
@@ -437,7 +451,7 @@ public final class RocketMace implements CustomWeapon, Listener {
 
          Location var20 = var4.at.clone();
          var20.setDirection(var4.back ? var5.getEyeLocation().toVector().subtract(var4.at.toVector()) : var4.vel);
-         var4.display.teleport(var20);
+         Tasks.move(var4.display, var20);
       }
    }
 
@@ -445,14 +459,26 @@ public final class RocketMace implements CustomWeapon, Listener {
    public void tick(FlameFFACore var1) {
    }
 
-   private void everyTick() {
-      int var1 = Bukkit.getCurrentTick();
-      if (!this.pins.isEmpty()) {
-         this.tickPins(var1);
-      }
+   private void ensureTicker(Player player) {
+      UUID uuid = player.getUniqueId();
+      if (this.ticking.add(uuid)) {
+         ScheduledTask ticker = this.plugin.tasks().entityTimer(player, task -> {
+            if (this.pins.containsKey(uuid)) {
+               this.tickPins(Bukkit.getCurrentTick(), uuid);
+            }
 
-      if (!this.flights.isEmpty()) {
-         this.tickFlights();
+            if (this.flights.containsKey(uuid)) {
+               this.tickFlights(uuid);
+            }
+
+            if (!this.pins.containsKey(uuid) && !this.flights.containsKey(uuid)) {
+               this.ticking.remove(uuid);
+               task.cancel();
+            }
+         }, () -> this.ticking.remove(uuid), 1L, 1L);
+         if (ticker == null) {
+            this.ticking.remove(uuid);
+         }
       }
    }
 

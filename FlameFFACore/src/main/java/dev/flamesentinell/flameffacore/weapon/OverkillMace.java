@@ -2,12 +2,10 @@ package dev.flamesentinell.flameffacore.weapon;
 
 import dev.flamesentinell.flameffacore.FlameFFACore;
 import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.UUID;
-import java.util.Map.Entry;
 import org.bukkit.Bukkit;
 import org.bukkit.GameMode;
 import org.bukkit.Location;
@@ -30,7 +28,7 @@ public final class OverkillMace implements CustomWeapon, Listener {
    public static final String ID = "overkill-mace";
    private final FlameFFACore plugin;
    private final OverkillFx fx;
-   private final Map<UUID, OverkillMace.State> states = new HashMap<>();
+   private final Map<UUID, OverkillMace.State> states = new ConcurrentHashMap<>();
 
    public OverkillMace(FlameFFACore plugin) {
       this.plugin = plugin;
@@ -197,38 +195,35 @@ public final class OverkillMace implements CustomWeapon, Listener {
    @Override
    public void tick(FlameFFACore plugin) {
       if (!this.states.isEmpty()) {
+         this.states.keySet().removeIf(uuid -> Bukkit.getPlayer(uuid) == null);
+      }
+   }
+
+   @Override
+   public void tick(FlameFFACore plugin, Player player) {
+      OverkillMace.State state = this.states.get(player.getUniqueId());
+      if (state != null) {
          int now = Bukkit.getCurrentTick();
-         Iterator<Entry<UUID, OverkillMace.State>> it = this.states.entrySet().iterator();
+         int need = Math.max(1, plugin.configs().main().getInt(this.path() + ".stacks-needed", 5));
+         if (state.buffUntil > now) {
+            this.fx.aura(player, state.buffUntil - now);
+            int total = Math.max(1, plugin.configs().main().getInt(this.path() + ".duration-seconds", 15)) * 20;
+            int left = state.buffUntil - now;
+            this.fx.holdLit(player, (double)left / total, (left + 19) / 20);
+         } else if (state.buffUntil > 0) {
+            this.fade(player, state, false);
+            this.fx.release(player);
+            plugin.weapons().startCooldown(player, this);
+         } else {
+            if (state.stacks > 0 && state.stackUntil <= now) {
+               state.stacks = 0;
+            }
 
-         while (it.hasNext()) {
-            Entry<UUID, OverkillMace.State> e = it.next();
-            OverkillMace.State state = e.getValue();
-            Player player = Bukkit.getPlayer(e.getKey());
-            if (player == null) {
-               it.remove();
+            if (state.stacks == 0) {
+               this.fx.release(player);
+               this.states.remove(player.getUniqueId(), state);
             } else {
-               int need = Math.max(1, plugin.configs().main().getInt(this.path() + ".stacks-needed", 5));
-               if (state.buffUntil > now) {
-                  this.fx.aura(player, state.buffUntil - now);
-                  int total = Math.max(1, plugin.configs().main().getInt(this.path() + ".duration-seconds", 15)) * 20;
-                  int left = state.buffUntil - now;
-                  this.fx.holdLit(player, (double)left / total, (left + 19) / 20);
-               } else if (state.buffUntil > 0) {
-                  this.fade(player, state, false);
-                  this.fx.release(player);
-                  plugin.weapons().startCooldown(player, this);
-               } else {
-                  if (state.stacks > 0 && state.stackUntil <= now) {
-                     state.stacks = 0;
-                  }
-
-                  if (state.stacks == 0) {
-                     this.fx.release(player);
-                     it.remove();
-                  } else {
-                     this.fx.hold(player, state.stacks, need);
-                  }
-               }
+               this.fx.hold(player, state.stacks, need);
             }
          }
       }
