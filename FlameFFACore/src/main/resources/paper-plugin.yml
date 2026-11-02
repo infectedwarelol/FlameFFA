@@ -62,3 +62,9 @@ permissions:
   flametrims.use:
     description: open /trim
     default: true
+  flamestore.customtag:
+    description: /customtag
+    default: op
+  flamestore.admin:
+    description: /flamestore reload and npc placement
+    default: op
