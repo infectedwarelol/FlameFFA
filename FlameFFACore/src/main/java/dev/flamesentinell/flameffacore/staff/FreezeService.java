@@ -1,8 +1,8 @@
 package dev.flamesentinell.flameffacore.staff;
 
+import java.util.concurrent.ConcurrentHashMap;
 import dev.flamesentinell.flameffacore.FlameFFACore;
 import java.time.Duration;
-import java.util.HashSet;
 import java.util.Locale;
 import java.util.Set;
 import java.util.UUID;
@@ -26,7 +26,7 @@ import org.bukkit.event.player.PlayerTeleportEvent.TeleportCause;
 public final class FreezeService implements Listener {
    private static final String MOVE_NOTICE = "frozenmove";
    private final FlameFFACore plugin;
-   private final Set<UUID> frozen = new HashSet<>();
+   private final Set<UUID> frozen = ConcurrentHashMap.newKeySet();
 
    public FreezeService(FlameFFACore plugin) {
       this.plugin = plugin;

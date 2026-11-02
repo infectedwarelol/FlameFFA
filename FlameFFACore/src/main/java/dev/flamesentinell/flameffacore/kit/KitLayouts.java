@@ -1,10 +1,10 @@
 package dev.flamesentinell.flameffacore.kit;
 
+import java.util.concurrent.ConcurrentHashMap;
 import dev.flamesentinell.flameffacore.FlameFFACore;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -33,7 +33,7 @@ public final class KitLayouts implements Listener {
    private final FlameFFACore plugin;
    private final NamespacedKey src;
    private final File dir;
-   private final Map<UUID, YamlConfiguration> cache = new HashMap<>();
+   private final Map<UUID, YamlConfiguration> cache = new ConcurrentHashMap<>();
 
    private KitLayouts(FlameFFACore var1) {
       this.plugin = var1;

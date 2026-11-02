@@ -1,12 +1,12 @@
 package dev.flamesentinell.flameffacore.rank;
 
+import java.util.concurrent.ConcurrentHashMap;
 import dev.flamesentinell.flameffacore.FlameFFACore;
 import dev.flamesentinell.flameffacore.util.Bots;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Comparator;
-import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -27,8 +27,8 @@ import org.bukkit.entity.Player;
 public final class RankService {
    private final FlameFFACore plugin;
    private final Map<String, Rank> ranks = new LinkedHashMap<>();
-   private final Set<String> hidden = new HashSet<>();
-   private final Set<String> noKit = new HashSet<>();
+   private final Set<String> hidden = ConcurrentHashMap.newKeySet();
+   private final Set<String> noKit = ConcurrentHashMap.newKeySet();
    private LuckPerms luckPerms;
 
    public RankService(FlameFFACore var1) {

@@ -1,8 +1,8 @@
 package dev.flamesentinell.flameffacore.ffa;
 
+import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.ConcurrentHashMap;
 import dev.flamesentinell.flameffacore.FlameFFACore;
-import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -21,8 +21,8 @@ import org.bukkit.event.player.PlayerQuitEvent;
 
 public final class AntiCheat implements Listener {
    private final FlameFFACore plugin;
-   private final Map<UUID, Integer> open = new HashMap<>();
-   private final List<String> permissions = new ArrayList<>();
+   private final Map<UUID, Integer> open = new ConcurrentHashMap<>();
+   private final List<String> permissions = new CopyOnWriteArrayList<>();
    private boolean enabled = true;
    private int grace = 20;
    private LuckPerms luckPerms;

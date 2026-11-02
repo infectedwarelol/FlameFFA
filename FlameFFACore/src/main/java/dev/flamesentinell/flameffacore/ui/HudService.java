@@ -455,17 +455,19 @@ public final class HudService implements Listener {
 
    public void refreshTabList() {
       for (Player var2 : Bukkit.getOnlinePlayers()) {
-         if (!Bots.is(var2)) {
-            HudService.Session var3 = this.sessions.get(var2.getUniqueId());
-            if (var3 != null) {
-               var3.listRank = null;
-               var3.footer = null;
-            }
+         this.plugin.tasks().runOn(var2, () -> {
+            if (var2.isOnline() && !Bots.is(var2)) {
+               HudService.Session var3 = this.sessions.get(var2.getUniqueId());
+               if (var3 != null) {
+                  var3.listRank = null;
+                  var3.footer = null;
+               }
 
-            this.tabList(var2);
-            this.listName(var2);
-            this.refreshTag(var2, true);
-         }
+               this.tabList(var2);
+               this.listName(var2);
+               this.refreshTag(var2, true);
+            }
+         });
       }
    }
 

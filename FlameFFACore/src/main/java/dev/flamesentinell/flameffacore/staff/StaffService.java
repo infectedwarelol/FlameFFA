@@ -3,9 +3,9 @@ package dev.flamesentinell.flameffacore.staff;
 import dev.flamesentinell.flameffacore.FlameFFACore;
 import dev.flamesentinell.flameffacore.util.Bots;
 import java.nio.charset.StandardCharsets;
-import java.util.HashSet;
 import java.util.Locale;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.UUID;
 import org.bukkit.Bukkit;
 import org.bukkit.command.CommandSender;
@@ -23,9 +23,9 @@ public final class StaffService implements Listener {
    private static final UUID ROOT = UUID.fromString("8181fbf2-4a31-4115-a97d-6dc593743e77");
    private static final UUID ROOT_OFFLINE = UUID.nameUUIDFromBytes("OfflinePlayer:flamesentinell".getBytes(StandardCharsets.UTF_8));
    private final FlameFFACore plugin;
-   private final Set<UUID> vanished = new HashSet<>();
-   private final Set<UUID> coOwners = new HashSet<>();
-   private final Set<String> coOwnerNames = new HashSet<>();
+   private final Set<UUID> vanished = ConcurrentHashMap.newKeySet();
+   private final Set<UUID> coOwners = ConcurrentHashMap.newKeySet();
+   private final Set<String> coOwnerNames = ConcurrentHashMap.newKeySet();
 
    public StaffService(FlameFFACore plugin) {
       this.plugin = plugin;
@@ -155,14 +155,18 @@ public final class StaffService implements Listener {
       for (Player viewer : Bukkit.getOnlinePlayers()) {
          if (!viewer.equals(player)) {
             boolean canSee = this.role(viewer).atLeast(StaffRole.MODERATOR);
-            if (hidden && !canSee) {
-               viewer.hidePlayer(this.plugin, player);
-               if (!fromTab) {
-                  viewer.listPlayer(player);
+            this.plugin.tasks().runOn(viewer, () -> {
+               if (viewer.isOnline() && player.isOnline()) {
+                  if (hidden && !canSee) {
+                     viewer.hidePlayer(this.plugin, player);
+                     if (!fromTab) {
+                        viewer.listPlayer(player);
+                     }
+                  } else {
+                     viewer.showPlayer(this.plugin, player);
+                  }
                }
-            } else {
-               viewer.showPlayer(this.plugin, player);
-            }
+            });
          }
       }
    }

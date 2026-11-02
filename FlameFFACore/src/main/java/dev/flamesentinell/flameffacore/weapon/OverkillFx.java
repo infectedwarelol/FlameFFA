@@ -1,8 +1,8 @@
 package dev.flamesentinell.flameffacore.weapon;
 
+import java.util.concurrent.ConcurrentHashMap;
 import dev.flamesentinell.flameffacore.FlameFFACore;
 import dev.flamesentinell.flameffacore.util.Text;
-import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.ThreadLocalRandom;
@@ -23,7 +23,7 @@ public final class OverkillFx {
    private static final Color FLASH = Color.fromRGB(196, 18, 8);
    private final FlameFFACore plugin;
    private final String path;
-   private final Map<String, Component> glyphLines = new HashMap<>();
+   private final Map<String, Component> glyphLines = new ConcurrentHashMap<>();
 
    public OverkillFx(FlameFFACore plugin, String path) {
       this.plugin = plugin;

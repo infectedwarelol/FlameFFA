@@ -1,11 +1,12 @@
 package dev.flamesentinell.flameffacore.ffa;
 
+import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.ConcurrentHashMap;
 import dev.flamesentinell.flameffacore.FlameFFACore;
 import dev.flamesentinell.flameffacore.util.Bots;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Set;
@@ -30,8 +31,8 @@ public final class Safezone {
    private int maxY;
    private int maxZ;
    private boolean set;
-   private final List<PotionEffect> effects = new ArrayList<>();
-   private final Set<UUID> inside = new HashSet<>();
+   private final List<PotionEffect> effects = new CopyOnWriteArrayList<>();
+   private final Set<UUID> inside = ConcurrentHashMap.newKeySet();
 
    public Safezone(FlameFFACore plugin) {
       this.plugin = plugin;

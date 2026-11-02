@@ -1,9 +1,9 @@
 package dev.flamesentinell.flameffacore.ui;
 
+import java.util.concurrent.ConcurrentHashMap;
 import dev.flamesentinell.flameffacore.FlameFFACore;
 import dev.flamesentinell.flameffacore.util.Text;
 import dev.flamesentinell.flameffacore.weapon.WeaponRegistry;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -14,14 +14,14 @@ import org.bukkit.entity.Player;
 
 public final class CooldownBar {
    private final FlameFFACore plugin;
-   private final Map<UUID, Integer> holds = new HashMap<>();
-   private final Map<UUID, Boolean> drawn = new HashMap<>();
-   private final Map<UUID, Component> pinned = new HashMap<>();
-   private final Map<UUID, Integer> pinUntil = new HashMap<>();
-   private final Map<UUID, Component> lastSent = new HashMap<>();
-   private final Map<UUID, Integer> lastSentTick = new HashMap<>();
+   private final Map<UUID, Integer> holds = new ConcurrentHashMap<>();
+   private final Map<UUID, Boolean> drawn = new ConcurrentHashMap<>();
+   private final Map<UUID, Component> pinned = new ConcurrentHashMap<>();
+   private final Map<UUID, Integer> pinUntil = new ConcurrentHashMap<>();
+   private final Map<UUID, Component> lastSent = new ConcurrentHashMap<>();
+   private final Map<UUID, Integer> lastSentTick = new ConcurrentHashMap<>();
    private Component separatorPart = Component.empty();
-   private final Map<String, Component> lines = new HashMap<>();
+   private final Map<String, Component> lines = new ConcurrentHashMap<>();
    private boolean enabled = true;
    private int holdTicks = 30;
    private String entry = "<colour><seconds>s";

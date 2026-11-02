@@ -1,16 +1,16 @@
 package dev.flamesentinell.flameffacore.chat;
 
+import java.util.concurrent.ConcurrentHashMap;
 import java.text.Normalizer;
 import java.text.Normalizer.Form;
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Set;
 
 public final class ChatFilter {
-   private final Set<String> banned = new HashSet<>();
-   private final Set<String> allowed = new HashSet<>();
+   private final Set<String> banned = ConcurrentHashMap.newKeySet();
+   private final Set<String> allowed = ConcurrentHashMap.newKeySet();
 
    public void load(List<String> bannedRaw, List<String> allowedRaw) {
       this.banned.clear();
