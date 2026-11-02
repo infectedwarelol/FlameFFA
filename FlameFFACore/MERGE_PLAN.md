@@ -30,77 +30,85 @@ Status legend: `[ ]` todo, `[x]` done (file:line filled in phase 3).
 
 ## 1. Feature checklist
 
+Paths are relative to `src/main/java/dev/flamesentinell/flameffacore/`.
+
 ### Shared infrastructure
-- [ ] `Tasks` scheduler facade (global / region / entity / async, cancellable handles, all tracked and cancelled in `onDisable`)
-- [ ] `Module` contract (`enable()`, `disable()`), toggled by `modules.<name>.enabled` in config.yml (default true)
-- [ ] Per-module config file loader with first-boot migration from `plugins/<OldPlugin>/config.yml`, never overwriting an existing file
-- [ ] Shared MiniMessage service: existing `util/Text.java`, player text always via `Placeholder.unparsed` or escape
-- [ ] Shared LuckPerms hook: existing `rank/RankService.java`
-- [ ] `folia-supported: true` in paper-plugin.yml
-- [ ] All ported permission nodes declared in paper-plugin.yml with original defaults
+- [x] `Tasks` scheduler facade, timers tracked, `cancelAll()` on disable: `util/Tasks.java:15`, `FlameFFACore.java` onDisable
+- [x] `Module` contract + `modules.<name>.enabled` toggles: `module/Module.java:5`, `module/ModuleManager.java:36`, `resources/config.yml` `modules:`
+- [x] Per-module config, first-boot migration from `plugins/<Old>/`, never overwrites: `module/ModuleConfig.java:32`
+- [x] Explicit permission gate for every ported command: `module/ModuleCommand.java:32`
+- [x] Atomic async YAML writer, flushed on disable: `config/ConfigManager.java:263`
+- [x] Shared MiniMessage `util/Text.java`, shared LuckPerms `rank/RankService.java`, single Hikari pool `storage/Database.java` (no module needed a second one)
+- [x] `folia-supported: true`: `resources/paper-plugin.yml:6`
+- [x] All ported permission nodes declared with original defaults: `resources/paper-plugin.yml`
+- [x] Modules registered: `FlameFFACore.java:211`
 
-### daily (FlameDaily, `daily.yml`, data `daily-claims.yml`)
-- [ ] `/daily` (perm `flamedaily.use`, default true): cooldown `cooldown-hours` 24, free-slot check, roll `min-tokens` 4 .. `max-tokens` 16 around `average` 7.6, gives kill tokens
-- [ ] bonus key for `flamedaily.bonus` (default false): `bonus-key.crate` mythic x `bonus-key.amount` 1
-- [ ] `/flamedaily reload|reset <player>` (perm `flamedaily.admin`, op)
-- [ ] messages `claimed`, `wait`, `full`, `bonus`
-- [ ] migrate `plugins/FlameDaily/claims.yml` (uuid -> epoch ms)
-- [ ] reflection `FlameFFACore.items().mintKillTokens` and console `ffaadmin mint/grant` replaced by direct calls
+### daily
+- [x] `/daily`, cooldown, free-slot check, roll: `daily/DailyModule.java:84`
+- [x] atomic claim (double-claim fix): `daily/DailyModule.java:100`
+- [x] bonus key for `flamedaily.bonus`, direct grant + audit instead of console dispatch: `daily/DailyModule.java:125`
+- [x] `/flamedaily reload|reset <player>`: `daily/DailyModule.java:194`
+- [x] messages `claimed` `wait` `full` `bonus`: `daily/DailyModule.java:222`, `resources/daily.yml`
+- [x] `FlameDaily/claims.yml` migrated to `daily-claims.yml`: `daily/DailyModule.java:35`
 
-### holograms (FlameHolograms, `holograms.yml`, data `holograms-data.yml`)
-- [ ] `/holo` aliases `hologram`, `holograms` (perm `flameholo.admin`, op), tab completion
-- [ ] subcommands: create, createat, addline, setline, insertline, removeline, movehere, tp, delete, info, list, near, scale, billboard, background, shadow, seethrough, width, reload, help
-- [ ] TextDisplay per hologram, PDC `flameholograms:id`, chunk load spawn / unload despawn, stale purge on enable
-- [ ] `{online}` / `{max}` live refresh every `refresh-seconds` (5)
-- [ ] defaults: scale 1.0, billboard center, shadow true, see-through false, line-width 240, background none
-- [ ] all `messages.*`
-- [ ] migrate `plugins/FlameHolograms/config.yml` and `holograms.yml`
+### holograms
+- [x] `/holo` + `hologram`, `holograms`, tab completion: `holograms/HologramsModule.java:120`, `holograms/HoloCommand.java:48`, `:422`
+- [x] all 20 subcommands: `holograms/HoloCommand.java:48`
+- [x] PDC `flameholograms:id` kept: `holograms/HologramsModule.java:69`
+- [x] chunk load spawn / unload despawn / purge: `holograms/HologramsModule.java:382`
+- [x] `{online}` `{max}` refresh: `holograms/HologramsModule.java:146`
+- [x] defaults: `holograms/HologramsModule.java:217`
+- [x] messages: `holograms/HologramsModule.java:409`, `resources/holograms.yml`
+- [x] `FlameHolograms/config.yml` -> `holograms.yml`, `FlameHolograms/holograms.yml` -> `holograms-data.yml`: `holograms/HologramsModule.java:76`
 
-### spawnguard (FlameSpawnGuard, `spawnguard.yml`)
-- [ ] `/spawnguard` reload (perm `spawnguard.admin`, op)
-- [ ] drop guard: player who leaves the safezone mid-air cannot hit until landing, action bar `blocked-message`, `block-projectiles`
-- [ ] clear on teleport (except ender pearl), death, quit
-- [ ] `no-push-in-safezone` collision rule toggle
-- [ ] safezone read from Core `Safezone` service instead of re-parsing `FlameFFACore/config.yml`
+### spawnguard
+- [x] `/spawnguard`: `spawnguard/SpawnGuardModule.java:79`
+- [x] drop guard + projectiles + action bar: `spawnguard/SpawnGuardModule.java:176`
+- [x] clear on teleport, death, quit: `spawnguard/SpawnGuardModule.java:155`
+- [x] collision rule (Paper only, see D1): `spawnguard/SpawnGuardModule.java:196`
+- [x] uses Core safezone live: `spawnguard/SpawnGuardModule.java:101`
+- [x] move handler early return: `spawnguard/SpawnGuardModule.java:137`
 
-### store (FlameStore, `store.yml`)
-- [ ] `/store` alias `shop`, `/discord`, `/rules`, `/media` (dialogs, books, chat links)
-- [ ] `/flamestore` (perm `flamestore.admin`, op): reload, npc, npcat, npcremove, rulesnpc, rulesnpcat, rulesnpcremove, discordnpc, discordnpcat, discordnpcremove, medianpc, medianpcat, medianpcremove
-- [ ] `/customtag <player> <tag>|clear` (perm `flamestore.customtag`, op), whitelist tag regex, `custom-tag.max-length` 16
-- [ ] 4 Mannequin NPCs + TextDisplay titles, skins, boots colour, click sound, chunk-load refresh
-- [ ] customtag writes Core `ranks.yml` through Core config service (async save) and calls Core reload directly
-- [ ] migrate `plugins/FlameStore/config.yml`
+### store
+- [x] `/store` `shop`, `/discord`, `/rules`, `/media`: `store/StoreModule.java:102`
+- [x] `/flamestore` + 12 npc subcommands: `store/StoreModule.java:243`
+- [x] `/customtag` with tag whitelist: `store/StoreModule.java:302`
+- [x] 4 NPCs, skins, boots, sound, chunk refresh: `store/StoreNpc.java:101`
+- [x] custom tag written to Core `ranks.yml` in memory + async, HUD refreshed: `store/StoreModule.java:339`
+- [x] `FlameStore/config.yml` -> `store.yml`: `store/StoreModule.java:58`
 
-### trims (FlameTrims, `trims.yml`, no settings today)
-- [ ] `/trim` alias `trims` (perm `flametrims.use`, default true)
-- [ ] per-slot template/material menu, stored in player PDC (`flametrims:template_*`, `flametrims:material_*`)
-- [ ] trim applied to worn armour, marked `flametrims:applied`, stripped when armour leaves the armour slot
-- [ ] strip on death drops, item spawn, armour stand; block click/drag dupes; save on close and on disable
-- [ ] bots (`smbot_bot`) skipped
+### trims
+- [x] `/trim` `trims`: `trims/TrimsModule.java:144`
+- [x] menu: `trims/TrimsModule.java:168`
+- [x] PDC `flametrims:*` kept: `trims/TrimsModule.java:61`
+- [x] apply / strip: `trims/TrimsModule.java:417`
+- [x] death, item spawn, armour stand, click/drag guards: `trims/TrimsModule.java:504`, `:230`
+- [x] bots skipped: `trims/TrimsModule.java:418`
+- no `trims.yml`: the plugin never had settings, an empty file would be dead weight
 
-### tweaks (FlameTweaks, `tweaks.yml`)
-- [ ] chat cooldown `chat-cooldown-seconds` 3, bypass `flametweaks.chat.bypass`
-- [ ] trapdoors only flip in creative
-- [ ] `/tempban <player> <days> [reason]`, `/permban`, `/unban` (perms `flametweaks.ban`, `flametweaks.tempban.limited` with `limited-tempban-max-days` 7, `flametweaks.ban.override`), `ban-appeal`, staff notify
-- [ ] `/vanish` alias `v` (perm `flametweaks.vanish`), ghost: hidden, fly, invulnerable, no targeting, restore on join
-- [ ] `/trash` aliases `disposal`, `bin`, blocked in combat, `trash-title`
-- [ ] `/freeze` alias `ss` -> Core staff freeze
-- [ ] `/invsee`, `/ecsee` (perm `flametweaks.invsee`, edit `flametweaks.invsee.edit`), offline targets via Core `OfflineInvsee` / `EnderVault`
-- [ ] `/watch add|remove|list <player>` (perm `flametweaks.watch`): per-tick recorder to `watch/<name>/<ts>.jsonl.gz`, macro trap `watch-trap` / `watch-trap-seconds`, `watch-players`
-- [ ] `/flametweaks` reload (perm `flametweaks.admin`)
-- [ ] reflection calls to Core `cooldowns()` / `staff()` replaced by direct calls
-- [ ] migrate `plugins/FlameTweaks/config.yml`; old recordings stay in `plugins/FlameTweaks/watch` (not moved)
+### tweaks
+- [x] chat cooldown: `tweaks/TweaksModule.java:169`
+- [x] trapdoors: `tweaks/TweaksModule.java:391`
+- [x] `/tempban` `/permban` `/unban`: `tweaks/TweaksModule.java:264`
+- [x] `/vanish` `v` + ghost: `tweaks/TweaksModule.java:414`
+- [x] `/trash` `disposal` `bin`: `tweaks/TweaksModule.java:400`
+- [x] `/freeze` `ss`: `tweaks/TweaksModule.java:240`
+- [x] `/invsee` `/ecsee`, offline via Core: `tweaks/TweaksModule.java:194`, `ffa/OfflineInvsee.java:93`, `ffa/EnderVault.java:153`
+- [x] `/watch` recorder + macro trap: `tweaks/Watch.java:709`
+- [x] `/flametweaks`: `tweaks/TweaksModule.java:92`
+- [x] reflection replaced: `tweaks/TweaksModule.java:417`
+- [x] `FlameTweaks/config.yml` -> `tweaks.yml`: `tweaks/TweaksModule.java:61`; old recordings stay in `plugins/FlameTweaks/watch`
 
-### windbrake (FlameWindBrake, `windbrake.yml`)
-- [ ] `/windbrake` reload (perm `windbrake.admin`, op)
-- [ ] wind charge brake: all 15 keys (`enabled`, `require-airborne`, `require-falling`, `min-fall-velocity`, `min-pitch-down`, `min-ground-distance`, `cooldown-ms`, multipliers, `hold-ticks`, sound, `debug`)
-- [ ] `windbrake_bypass` tag, braked charge removed on hit
-- [ ] migrate `plugins/FlameWindBrake/config.yml`
+### windbrake
+- [x] `/windbrake`: `windbrake/WindBrakeModule.java:65`
+- [x] brake logic, 15 keys: `windbrake/WindBrakeModule.java:104`
+- [x] bypass tag, charge removal: `windbrake/WindBrakeModule.java:162`
+- [x] `FlameWindBrake/config.yml` -> `windbrake.yml`: `windbrake/WindBrakeModule.java:42`
 
-### Core (existing, behaviour unchanged)
-- [ ] all 12 Brigadier commands + `ec`, `cartinv`, `keyall` and aliases unchanged
-- [ ] every `BukkitScheduler` call migrated (list in section 4)
-- [ ] scoreboard features handled per section 3, decision D1
+### Core
+- [x] commands unchanged: `FlameFFACore.java` `registerCommands`
+- [x] every BukkitScheduler call migrated (inspect.sh checks): `ui/HudService.java:673`, `ffa/ArenaSweeper.java:211`, weapons, kit, crate, cosmetic, villager
+- [x] scoreboard features skipped on Folia only (D1)
 
 ## 2. Collisions and decisions
 
