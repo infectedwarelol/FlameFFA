@@ -1,0 +1,14 @@
+name: FlameSpawnGuard
+version: 1.0.0
+main: dev.flamesentinell.spawnguard.SpawnGuard
+api-version: '1.21.11'
+authors: [ flamesentinell ]
+depend: [ FlameFFACore ]
+description: no hits while dropping out of spawn and no pushing inside it
+commands:
+  spawnguard:
+    description: reload the safezone and settings
+    permission: spawnguard.admin
+permissions:
+  spawnguard.admin:
+    default: op

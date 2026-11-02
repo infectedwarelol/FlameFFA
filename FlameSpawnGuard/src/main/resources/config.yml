@@ -1,0 +1,8 @@
+# a player who leaves the safezone while in the air cannot deal damage until they land
+spawn-drop-guard: true
+# also block arrows tridents and other projectiles they shoot while falling
+block-projectiles: true
+# shown on the action bar when a hit is blocked  minimessage
+blocked-message: "<red>Land first before you can attack"
+# players inside the safezone cannot be pushed by walking into each other
+no-push-in-safezone: true
