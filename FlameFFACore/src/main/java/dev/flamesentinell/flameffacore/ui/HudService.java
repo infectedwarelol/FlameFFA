@@ -896,12 +896,14 @@ public final class HudService implements Listener {
    }
 
    private void clearKeyLine(HudService.Session var1) {
-      if (var1.keyLine != null) {
-         if (var1.keyLine.isValid()) {
-            var1.keyLine.remove();
-         }
-
+      TextDisplay var2 = var1.keyLine;
+      if (var2 != null) {
          var1.keyLine = null;
+         this.plugin.tasks().runOn(var2, () -> {
+            if (var2.isValid()) {
+               var2.remove();
+            }
+         });
       }
    }
 
@@ -926,7 +928,7 @@ public final class HudService implements Listener {
       final String[] rendered = new String[HudService.ENTRIES.length];
       int shown;
       String lookingAt;
-      TextDisplay keyLine;
+      volatile TextDisplay keyLine;
       String keyText;
       String listRank;
       String footer;
