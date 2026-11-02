@@ -50,6 +50,7 @@ import dev.flamesentinell.flameffacore.ui.CooldownBar;
 import dev.flamesentinell.flameffacore.ui.HudService;
 import dev.flamesentinell.flameffacore.ui.LeaderboardService;
 import dev.flamesentinell.flameffacore.util.Cooldowns;
+import dev.flamesentinell.flameffacore.util.Tasks;
 import dev.flamesentinell.flameffacore.villager.VillagerService;
 import dev.flamesentinell.flameffacore.weapon.AegisShield;
 import dev.flamesentinell.flameffacore.weapon.StunMace;
@@ -62,6 +63,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import org.bukkit.Bukkit;
+import org.bukkit.entity.Entity;
 import org.bukkit.plugin.java.JavaPlugin;
 
 public final class FlameFFACore extends JavaPlugin {
@@ -104,8 +106,10 @@ public final class FlameFFACore extends JavaPlugin {
    private SpawnCommand spawnCommand;
    private Cooldowns cooldowns;
    private KitCooldownStore kitCooldowns;
+   private Tasks tasks;
 
    public void onEnable() {
+      this.tasks = new Tasks(this);
       this.cooldowns = new Cooldowns();
       this.configs = new ConfigManager(this);
       this.configs.load();
@@ -195,7 +199,7 @@ public final class FlameFFACore extends JavaPlugin {
       this.packHost.start();
       Bukkit.getPluginManager().registerEvents(this.packHost, this);
       this.registerCommands();
-      Bukkit.getScheduler().runTask(this, () -> {
+      this.tasks.global(() -> {
          int var1x = this.combatHud.sweepLeftovers();
          if (var1x > 0) {
             this.getSLF4JLogger().info("cleared {} leftover damage numbers", var1x);
@@ -274,6 +278,10 @@ public final class FlameFFACore extends JavaPlugin {
          } catch (InterruptedException var3) {
             Thread.currentThread().interrupt();
          }
+      }
+
+      if (this.tasks != null) {
+         this.tasks.cancelAll();
       }
 
       if (this.database != null) {
@@ -483,9 +491,15 @@ public final class FlameFFACore extends JavaPlugin {
       }
    }
 
-   public void sync(Runnable var1) {
-      if (this.isEnabled()) {
-         Bukkit.getScheduler().runTask(this, var1);
-      }
+   public Tasks tasks() {
+      return this.tasks;
+   }
+
+   public void sync(Runnable action) {
+      this.tasks.global(action);
+   }
+
+   public void sync(Entity entity, Runnable action) {
+      this.tasks.entity(entity, action);
    }
 }
