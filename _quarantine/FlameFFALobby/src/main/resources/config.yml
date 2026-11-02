@@ -1,0 +1,89 @@
+# FlameFFALobby
+# the owner is console plus flamesentinell, hardcoded, plus anyone listed here
+# no command can add an owner, this file is the only way
+security:
+  owners:
+    - accb001a-08aa-4c2d-a1f2-1a8dd0975df6   # BohdanBro
+
+
+# logs every message sent to and received from the proxy, for tracking down a dropped one
+debug: true
+
+npc:
+  enabled: true
+  # the big line above its head
+  name: "<gradient:#ff9d3d:#c2410c><bold>FFA</bold></gradient>"
+  # whose skin it wears
+  # the texture below is already baked in, so nothing is ever looked up on its own
+  # to take a new snapshot of their current skin, run /lobby npc refreshskin
+  skin: flamesentinell
+  # 1.0 is a normal player, 1.25 is a quarter taller
+  scale: 1.25
+  # where clicking it sends you, the name from velocity.toml under [servers]
+  target-server: ffa
+  # written by /lobby npc set, never edit by hand
+  # location:
+  #   world: world
+  #   x: 0.5
+  #   y: 64.0
+  #   z: 0.5
+  #   yaw: 180.0
+  # flamesentinell's skin as of the build, frozen on purpose
+  # a skin change in game never reaches the npc unless you ask for it
+  cached-skin:
+    name: flamesentinell
+    uuid: 8181fbf2-4a31-4115-a97d-6dc593743e77
+    value: ewogICJ0aW1lc3RhbXAiIDogMTc4ODkzNjYwNzAxOSwKICAicHJvZmlsZUlkIiA6ICI4MTgxZmJmMjRhMzE0MTE1YTk3ZDZkYzU5Mzc0M2U3NyIsCiAgInByb2ZpbGVOYW1lIiA6ICJmbGFtZXNlbnRpbmVsbCIsCiAgInNpZ25hdHVyZVJlcXVpcmVkIiA6IHRydWUsCiAgInRleHR1cmVzIiA6IHsKICAgICJTS0lOIiA6IHsKICAgICAgInVybCIgOiAiaHR0cDovL3RleHR1cmVzLm1pbmVjcmFmdC5uZXQvdGV4dHVyZS80MzZjZDJjZjJiMTUwMTU3ODIwMTlmNDNiYzkyZDhjNGZlMzI1YWY3ZDcwMjI0ZGE2OWM1N2U5YjcwOGNmNjliIgogICAgfQogIH0KfQ==
+    signature: KZn1wig/kxF/dF3l4weLbPNo58Bh/TvDd0XX0Mho3F7W6c/ArbFQ5Kv/fpbDFe9n6RBwH+yFk4E1gSKYbszLBBvQ5CMN9HtDOrLpDOgf0fuDrh9AWKJuHiKMjY01i4fiU7wOK7cx+IA7GljVoFpgyBxOdY4MKLo4gUpfTBfw0MG+QipMtaPadslJuhi8wAuhVAOlUhx4+I0MWtMp5MBIU8j5SpSXrAc1/QslwZEt7c189GtqsVWyIDZLk5lxebyFF8cGXco6KLiVnf+agIqI/rcbEiAKkqRpuk614jpYH7q/2vYcG84SSHZhPCa2Dd4AZ7OeKl703fJzBq/kref6/3x2SeT5CtvyMrmpUPoQwHunyrYyTUU3NcordopTFaIsn7BjdQu3PD9xl9AzOdamywB7s8ROTR6/pKA2+Qus7yndXUHlcMxA00J/QyRCq/Ju8vtk24B7MDkcsbYQ4b4lsbMHbqf3nx4OoPvSS7iygBrO79DDhbcrYiv7yYx1QyXJHmILdqFtqGyEiQ4ZZPI7HsH4RGt9kldUW0WFWUdUkLYqS/SDGpDsIkdgFUsxiAyOkoSkHZ42Vzk16SaefwyP1ArSqotZDQfXaKp4ZPPFtCAb8dpPv8F/CRvE4aUtlNF+GpNkUNb0MmlbDP90InzPkh9AqFqoaH57ENdfIxdH7EU=
+
+count:
+  # the server whose player count is shown, asked over the proxy
+  server: ffa
+  seconds: 5
+  # the ffa server's own address, the same one velocity.toml has under [servers]
+  # the lobby pings it directly the way the multiplayer screen would, so the count needs nothing from the proxy
+  # leave it blank to rely on the proxy alone
+  ping: ""
+  line: "<white><count></white> <gray>Players Online</gray>"
+  # shown until the first answer arrives from anywhere
+  unknown: "<gray>connecting<gray>"
+  # shown when the ping gets no answer at all
+  offline: "<red>offline"
+
+click:
+  # sound played when somebody clicks the npc
+  sound: BLOCK_AMETHYST_BLOCK_CHIME
+  # a hostname velocity maps straight to the ffa server under [forced-hosts], with the proxy's port
+  # when the quiet switch is not possible the npc reconnects you through this instead, no second click
+  # needs a dns record for the host pointing at the proxy and accepts-transfers = true in velocity.toml
+  transfer-host: ""
+  transfer-port: 25643
+  sending: "<gray>Sending you to <white>FFA</white>"
+  failed: "<red>FFA is not reachable right now."
+  # shown only when the quiet switch did not happen, clicking it runs /server on your own client
+  # blank turns the fallback off
+  fallback: "<gray>Still here? <aqua><u>Click to join FFA</u></aqua>"
+  # ticks to wait before deciding the quiet switch failed
+  fallback-ticks: 25
+
+rules:
+  # everyone arrives in adventure mode
+  force-adventure: true
+  # and with nothing in their hands, lobby inventories are always empty
+  clear-inventory-on-join: true
+  # no damage, no hunger, no drops, no block changes
+  invulnerable: true
+  no-hunger: true
+  no-block-changes: true
+  no-item-drops: true
+  # falling out of the world puts you back at spawn instead of killing you
+  void-catch: true
+  void-y: -20
+  # written by /lobby setspawn, the world spawn is used when this is missing
+  # spawn:
+  #   world: world
+  #   x: 0.5
+  #   y: 64.0
+  #   z: 0.5
+  #   yaw: 0.0
+  #   pitch: 0.0

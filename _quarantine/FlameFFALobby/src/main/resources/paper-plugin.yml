@@ -1,0 +1,14 @@
+name: FlameFFALobby
+version: '1.0.0'
+main: dev.flamesentinell.flameffalobby.FlameFFALobby
+api-version: '1.21'
+authors: [ flamesentinell ]
+description: hub server for the flame ffa network
+
+permissions:
+  flameffalobby.admin:
+    description: place and move the npc, set spawn, reload
+    default: op
+  flameffalobby.build:
+    description: build in the lobby without switching gamemode
+    default: op
