@@ -1,0 +1,22 @@
+name: FlameDaily
+version: 1.1.0
+main: dev.flamesentinell.daily.FlameDaily
+api-version: '1.21.11'
+authors: [ flamesentinell ]
+depend: [ FlameFFACore ]
+description: daily kill token reward
+commands:
+  daily:
+    description: claim your daily kill tokens
+    permission: flamedaily.use
+  flamedaily:
+    description: reload or reset a daily
+    usage: /flamedaily reload|reset <player>
+    permission: flamedaily.admin
+permissions:
+  flamedaily.use:
+    default: true
+  flamedaily.bonus:
+    default: false
+  flamedaily.admin:
+    default: op
