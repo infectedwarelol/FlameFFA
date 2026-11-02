@@ -1,0 +1,15 @@
+# seconds between chat messages  0 turns it off  flametweaks.chat.bypass skips it
+chat-cooldown-seconds: 3
+chat-cooldown-message: "<red>Wait <time>s before chatting again."
+# shown on the ban screen  leave empty to hide
+ban-appeal: "https://discord.gg/ETpnReMVpU"
+trash-title: "<dark_red>Trash <dark_gray>(closing deletes everything)"
+
+# players whose every tick and input is recorded to plugins FlameTweaks watch
+watch-players: []
+# swap a weapon with another hotbar item mid fight on watched players to catch macros  swapped back after three seconds
+watch-trap: true
+# average seconds between traps
+watch-trap-seconds: 90
+# longest tempban in days for staff with flametweaks tempban limited
+limited-tempban-max-days: 7

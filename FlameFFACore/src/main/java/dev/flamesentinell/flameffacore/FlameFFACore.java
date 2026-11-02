@@ -58,6 +58,7 @@ import dev.flamesentinell.flameffacore.spawnguard.SpawnGuardModule;
 import dev.flamesentinell.flameffacore.holograms.HologramsModule;
 import dev.flamesentinell.flameffacore.trims.TrimsModule;
 import dev.flamesentinell.flameffacore.store.StoreModule;
+import dev.flamesentinell.flameffacore.tweaks.TweaksModule;
 import dev.flamesentinell.flameffacore.villager.VillagerService;
 import dev.flamesentinell.flameffacore.weapon.AegisShield;
 import dev.flamesentinell.flameffacore.weapon.StunMace;
@@ -213,6 +214,7 @@ public final class FlameFFACore extends JavaPlugin {
       this.modules.add(new HologramsModule(this));
       this.modules.add(new TrimsModule(this));
       this.modules.add(new StoreModule(this));
+      this.modules.add(new TweaksModule(this));
       this.modules.enableAll();
       this.registerCommands();
       this.tasks.global(() -> {

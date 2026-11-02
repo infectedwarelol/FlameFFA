@@ -68,3 +68,30 @@ permissions:
   flamestore.admin:
     description: /flamestore reload and npc placement
     default: op
+  flametweaks.watch:
+    description: /watch recordings
+    default: op
+  flametweaks.vanish:
+    description: use vanish  given to the admin group in luckperms
+    default: op
+  flametweaks.ban:
+    description: tempban permban and unban  given to the mod group in luckperms
+    default: false
+  flametweaks.tempban.limited:
+    description: tempban only  up to limited-tempban-max-days  given to trial ssers in luckperms
+    default: false
+  flametweaks.ban.override:
+    description: may ban other staff
+    default: false
+  flametweaks.invsee:
+    description: /invsee and /ecsee
+    default: op
+  flametweaks.invsee.edit:
+    description: edit what /invsee and /ecsee show
+    default: op
+  flametweaks.admin:
+    description: /flametweaks reload
+    default: op
+  flametweaks.chat.bypass:
+    description: skip the chat cooldown
+    default: op
