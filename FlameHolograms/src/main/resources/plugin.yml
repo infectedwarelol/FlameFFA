@@ -1,0 +1,17 @@
+name: FlameHolograms
+version: '1.0.0'
+main: dev.flamesentinell.flameholo.FlameHolo
+api-version: '1.21'
+authors: [ flamesentinell ]
+description: Floating text for the FFA spawn
+
+commands:
+  holo:
+    description: Place and edit floating text
+    aliases: [ hologram, holograms ]
+    permission: flameholo.admin
+
+permissions:
+  flameholo.admin:
+    description: Use /holo
+    default: op
