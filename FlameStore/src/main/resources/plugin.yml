@@ -1,0 +1,28 @@
+name: FlameStore
+version: 1.0.0
+main: dev.flamesentinell.flamestore.FlameStore
+api-version: '1.21.11'
+author: flamesentinell
+description: /store opens a popup with a link to the store
+commands:
+  store:
+    description: open the store
+    aliases: [shop]
+  discord:
+    description: join the flame ffa discord
+  rules:
+    description: read the server rules
+  media:
+    description: how to get the media rank
+  flamestore:
+    description: reload the store popup  npc npcat npcremove  rulesnpc rulesnpcat rulesnpcremove  discordnpc discordnpcat discordnpcremove  medianpc medianpcat medianpcremove place the npcs
+    permission: flamestore.admin
+  customtag:
+    description: set the tag of a custom rank player
+    usage: /customtag <player> <tag>|clear
+    permission: flamestore.customtag
+permissions:
+  flamestore.customtag:
+    default: op
+  flamestore.admin:
+    default: op

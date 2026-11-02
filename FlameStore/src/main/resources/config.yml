@@ -1,0 +1,93 @@
+# FlameStore  /store shows a popup  the button opens the link after the usual minecraft are you sure screen
+# every text is minimessage
+url: "https://store.flameffa.net"
+title: "<bold><gradient:#f2c14e:#e8552f>FLAME FFA STORE</gradient>"
+body: "<white>Ranks, crates and more.\n<gray>Every purchase helps keep the server running."
+open-button: "<green><bold>Open the store"
+close-button: "<gray>Close"
+# sent in chat as well so clients that cannot show the popup still get a link
+chat: "<gray>Store: <click:open_url:'<url>'><hover:show_text:'<gray>Click to open'><#f2c14e><u>store.flameffa.net</u></hover></click>"
+
+# the store npc  a mannequin with a skin  right or left click opens the store popup
+# /flamestore npc places it where you stand  /flamestore npcat <world> <x> <y> <z> <yaw> from the console  /flamestore npcremove
+npc:
+  enabled: true
+  scale: 1.5
+  title: "<bold><gradient:#f2c14e:#e8552f>STORE</gradient>"
+  title-size: 2.0
+  click-sound: block.amethyst_block.chime
+  skin:
+    name: 1UK3E
+    uuid: 8ffea830-177f-48d3-adc5-986536f32638
+    value: ewogICJ0aW1lc3RhbXAiIDogMTc5MjUxMTY4NzE4NywKICAicHJvZmlsZUlkIiA6ICI4ZmZlYTgzMDE3N2Y0OGQzYWRjNTk4NjUzNmYzMjYzOCIsCiAgInByb2ZpbGVOYW1lIiA6ICIxVUszRSIsCiAgInNpZ25hdHVyZVJlcXVpcmVkIiA6IHRydWUsCiAgInRleHR1cmVzIiA6IHsKICAgICJTS0lOIiA6IHsKICAgICAgInVybCIgOiAiaHR0cDovL3RleHR1cmVzLm1pbmVjcmFmdC5uZXQvdGV4dHVyZS8xZjg2MzEzYjI4MDJjODU5YjQ0ZWI2YTI3NjA0MTA2ZWQxOTkxY2IxZjQ4MmU4NWZlMzc5ZGRhYWNiZmFmZTYzIgogICAgfQogIH0KfQ==
+    signature: jVRBc/06kRfTBNsPJIodsMXspVRb1PelS4xVBBLHV+Hqq0EEoBbalD6RtIH8cIotq40SCo7FTquc1fs0BlnYNzMjHf35M5XayP0oTNZCNEZEqU6e4X9XTLPQAIgBvgON7NS2YAHOPut0fGwfgEFkBnCZ2lPWpQ0bsyZAtbiVMmQQ0VnZksH8fkjsBNbTNKaMn6/3BxACCmoPyzn1CoVEY6GQRWvebXcSf6qbHW7B7VmQt6J4A05Omw/G+Q5ZmiYBeJxfQR76Ua/VwXlUOE8Ba/VKEaxK64cTzpLydlcxkAQathWmU/1XcPIrzmtwkzI6xdYA2nVqTDXIwzvWQJbQ3RA61UWMVnXcHDHDNOB/SS8haZYHjBIyu+n7zuF1cT4fKYCdXtdqSxbQVroOxek6mzEH3A53/7IcpdjXkWULbK2fR2WG529InN39OwqkpKyhrJlWt8yh1PGRO5ifCP82P27sejXxUpJyy4HJCP0Q9RpeIA+IPLwozyQRWn0f2oat5yyrS8YAmp3rICLpoQsVb7XSAEeNSvKOVWpaKEUHNDVDJ72s5wKtLn75rVsf37I0QpnNm1xNyP+mDpVBOQqmAFsx4m7akByzVGFPerll0D+N1JuxJsIxZACJvXOllHTk1dhQl/DsmTJypMmh0mzNGID12LXRLKdzZLKg1+Utf0U=
+
+# the rules npc  clicking it opens the rules book  /rules opens it too
+# /flamestore rulesnpc places it where you stand  /flamestore rulesnpcat <world> <x> <y> <z> <yaw>  /flamestore rulesnpcremove
+rules-npc:
+  enabled: true
+  scale: 1.0
+  title: "<bold><gradient:#f2c14e:#e8552f>RULES</gradient>"
+  title-size: 1.5
+  click-sound: item.book.page_turn
+  # dyed leather boots with the enchanted glint  lime dye colour  empty for none
+  boots-color: "#80C71F"
+  skin:
+    name: MagickArthur_
+    uuid: 384ba0b8-3949-482b-8efe-d2ebba9a1198
+    value: ewogICJ0aW1lc3RhbXAiIDogMTc5MjUxNDkwMTUxMywKICAicHJvZmlsZUlkIiA6ICIzODRiYTBiODM5NDk0ODJiOGVmZWQyZWJiYTlhMTE5OCIsCiAgInByb2ZpbGVOYW1lIiA6ICJNYWdpY2tBcnRodXJfIiwKICAic2lnbmF0dXJlUmVxdWlyZWQiIDogdHJ1ZSwKICAidGV4dHVyZXMiIDogewogICAgIlNLSU4iIDogewogICAgICAidXJsIiA6ICJodHRwOi8vdGV4dHVyZXMubWluZWNyYWZ0Lm5ldC90ZXh0dXJlLzhkYWIwZjdkNTAxYWM2ZDQ2MDAzMmVlN2M3ZjY0NWI0MjAyYjA0YjlhMDY5NzRmYjU2ZDgwMjRkNDFkOTNiMDYiLAogICAgICAibWV0YWRhdGEiIDogewogICAgICAgICJtb2RlbCIgOiAic2xpbSIKICAgICAgfQogICAgfSwKICAgICJDQVBFIiA6IHsKICAgICAgInVybCIgOiAiaHR0cDovL3RleHR1cmVzLm1pbmVjcmFmdC5uZXQvdGV4dHVyZS8yOGRlNGE4MTY4OGFkMThiNDllNzM1YTI3M2UwODZjMThmMWUzOTY2OTU2MTIzY2NiNTc0MDM0YzA2ZjVkMzM2IgogICAgfQogIH0KfQ==
+    signature: dhYDWJo5wLlfZHZgTYIJ9ALs33treUHboA0vFj8A1aGKUeOlWIu6PvK2QFBwPW6UBG0JkLmACV0Rb9GTA+qVHLZ1PyiKicoiWzarKJGXbZ+INnpNZmUQZL9mfHj/atBmxjnAB16E2qaVofHHa8AAnUDS1thRnHF8ndMl7/p4vE453CvcBcqzGMv7ji/gqnqK02mpVWGcCP1pSxftAFaywNRShXY5JG9r5UML33FVIb44jsNcQMgwwJ1Ri5RxYqhhNMsGR7vl2dirN4PP7WNHkPNKCSjDfiXklLcSgcPMlkecqbdHVH+GUrwJi7RxbzOc9F+I+Vd22fwjcchNAIHXkOm9xhB/8frFE6Orr+WCtWAIFYZ504CgWUFGTZQF0/k3xbmF/K8ADjKXGcDpFnkNiDIRA0hdC8KeAkQyTiLnRuco7q7cpSavINPiXFG9oq+f+d06zqKNasHzTdtbNvcNKYuWxzAD+dLn0SiZj/k3j2ZaG4Rr4xhjMw9ur1ObRW3VoNS80+2G9wdRcvEQ9x+FokZipob4bO3ApgsgkjqKdOVa1yVTDG6mvB5KJ/F3oaaPORdodP+QOEsWXgtENK68LGLI+FbACKRg1rbHyTdUYE+dS3rVuIvCDsBVEgsUij8e/dnAjxkjEkUGjZ4fCB3dd+TCCAzqSkMdrOeEbEyEFEE=
+# one entry per page  minimessage  a page fits about 14 short lines
+rules-book:
+  - "<dark_red><bold>FLAME FFA RULES</bold></dark_red>\n\n<black><bold>Player Behavior</bold>\n<dark_gray>- No racism\n- No slurs\n- No harassment or hate speech\n- No toxicity (minimal swearing is allowed)"
+  - "<black><bold>Player Behavior</bold>\n<dark_gray>- No discrimination\n- No threats\n- No leaking private information\n- No advertising\n- No doxxing, attempting to or threatening to"
+  - "<black><bold>Client / Mods / Bugs</bold>\n<dark_gray>- No cheating or hacking\n- No unfair advantages\n- No abusing bugs\n- No ec'ing or storing illegal items (items obtained by breaking blocks through map glitches and such)"
+  - "<black><bold>Client / Mods / Bugs</bold>\n<dark_gray>- No loopholing rules\n- No duping\n- No pushing people off spawn"
+  - "<black><bold>Staff Related</bold>\n<dark_gray>- Staff decisions are <dark_red><bold>FINAL</bold></dark_red>\n- Not listening to staff may result in punishment"
+
+# /discord and the discord npc  same popup style as the store
+discord:
+  url: "https://discord.gg/ETpnReMVpU"
+  title: "<bold><#5865f2>FLAME FFA DISCORD"
+  body: "<white>Join the community.\n<gray>Events, updates, giveaways and support."
+  open-button: "<#5865f2><bold>Join the Discord"
+  close-button: "<gray>Close"
+  chat: "<gray>Discord: <click:open_url:'<url>'><hover:show_text:'<gray>Click to join'><#5865f2><u>discord.gg/ETpnReMVpU</u></hover></click>"
+# the discord npc  /flamestore discordnpc  discordnpcat <world> <x> <y> <z> <yaw>  discordnpcremove
+discord-npc:
+  enabled: true
+  scale: 1.0
+  title: "<bold><dark_blue>Discord"
+  title-size: 1.5
+  click-sound: block.amethyst_block.chime
+  boots-color: ""
+  skin:
+    name: lostserenaa
+    uuid: b42f1958-ed18-420c-945e-8eccf7b634e0
+    value: ewogICJ0aW1lc3RhbXAiIDogMTc5MjUyMDUyODM4MiwKICAicHJvZmlsZUlkIiA6ICJiNDJmMTk1OGVkMTg0MjBjOTQ1ZThlY2NmN2I2MzRlMCIsCiAgInByb2ZpbGVOYW1lIiA6ICJsb3N0c2VyZW5hYSIsCiAgInNpZ25hdHVyZVJlcXVpcmVkIiA6IHRydWUsCiAgInRleHR1cmVzIiA6IHsKICAgICJTS0lOIiA6IHsKICAgICAgInVybCIgOiAiaHR0cDovL3RleHR1cmVzLm1pbmVjcmFmdC5uZXQvdGV4dHVyZS9lZjYyYTNmN2Y4NTU1ZGZjMjdkY2M2YTNlZjFmYjAwMzUxNWRjZmRhOTVjOTBjOWFkNmMxOTBkNzVhZjY5OWVjIiwKICAgICAgIm1ldGFkYXRhIiA6IHsKICAgICAgICAibW9kZWwiIDogInNsaW0iCiAgICAgIH0KICAgIH0sCiAgICAiQ0FQRSIgOiB7CiAgICAgICJ1cmwiIDogImh0dHA6Ly90ZXh0dXJlcy5taW5lY3JhZnQubmV0L3RleHR1cmUvNWVjOTMwY2RkMjYyOWM4NzcxNjU1YzYwZWViZWI4NjdiNGI2NTU5YjBlNmQzYmM3MWM0MGM5NjM0N2ZhMDNmMCIKICAgIH0KICB9Cn0=
+    signature: QMTiXM0EhGH0Jg9NoKFtE7MLRh01MmfeaU1XAAn2jq9PTlqLxz8y785gZ8RLjfHBRw4BgC0KzGOTksVa7o+MJxjCRv1aNiAFaLi7TVO+m0cEWOgLDxUWOjc4Vx5stW7fKf4tYpcmN1SmZTwfCMVX9xbnMf50RHt3kQwxL/CUCCEjpeNvf0+xvUlLQhaJBy7A+V+W0Y+SKXN1V515Kmuyc7m7S+qNWxm9Yxi//kb3vAVYS3K1quXvfeilt75awR4kHJ0/i5G44UjkK8mVnXk3pLG61Pwc5nX2E/TPC2+bHSvqp/mNadOMREXmhPAg3YtmjJICyP1maoug4C9WTkV75tHgUjUDFYLujQH9GTgNGkLJPfd7DOHqWTkrDcofoA87ZcSvMDo47uJwNHd0Ctdu9gO7v9pC0RL13+mDd+KBmN+B7v6oHojjsFestKTsi2OrMVSghHEstcYIldouj6u4jCHhQfV2g9X7AzxNW6w1wZ0L5ye0clUX9IYMiG4HHkQI1fvW26CBiQ7HrMSMsmaweM/anggL/E+6abE4+ojYoThb7LB2j39JBb8PkZaVqVIjK0B3w1MY3TcmtoT8rnMc80HRoXd3LoOAArPsQEr5ZpZmb3zwNdi2KrGcgz+/5Ez7F/lw+L1XRe69yFUZ37LfvLUyZyjt/6Q/HVbaGsNnfp8=
+
+# media rank npc  opens the media requirements book
+media-npc:
+  enabled: true
+  scale: 1.0
+  title: "<bold><#ff69b4>Media Rank"
+  title-size: 1.5
+  click-sound: item.book.page_turn
+  boots-color: ""
+  skin:
+    name: Shieldstuna
+    uuid: 16bde2b3-0722-4ce7-867b-d38bb51bc773
+    value: ewogICJ0aW1lc3RhbXAiIDogMTc5Mjc2NjczMTUwNiwKICAicHJvZmlsZUlkIiA6ICIxNmJkZTJiMzA3MjI0Y2U3ODY3YmQzOGJiNTFiYzc3MyIsCiAgInByb2ZpbGVOYW1lIiA6ICJTaGllbGRzdHVuYSIsCiAgInNpZ25hdHVyZVJlcXVpcmVkIiA6IHRydWUsCiAgInRleHR1cmVzIiA6IHsKICAgICJTS0lOIiA6IHsKICAgICAgInVybCIgOiAiaHR0cDovL3RleHR1cmVzLm1pbmVjcmFmdC5uZXQvdGV4dHVyZS9jYTZjYWQ4ZDEwMWIxYjI2OGNkNzRiMzlkMWFmYTRhMDAxZGYyZDMyNjczODM3NDA2NWMwZTcxYWFiYWUxYjQyIiwKICAgICAgIm1ldGFkYXRhIiA6IHsKICAgICAgICAibW9kZWwiIDogInNsaW0iCiAgICAgIH0KICAgIH0KICB9Cn0=
+    signature: C2Ajv6xUvNjuisB0XPVbtCZ9do+TB+Ep50xAZVTq1QpqXMUPLP1tKD0Icdetyi/c/AuAwfdAdx7/jsRwlTs4x2KknUhZz+qxe4AWvdZYxeeJ7FjWWpSQWy7ZsufM428apiW0qkCP8qAOsK69lpqWjYwnETKbMVBNWNQ72DozBEOIDQ6nRdM4hjBajeok6xeL0Ksu96o4WRx8TUD4Z8PzhZB9A2mug2doblh2Go081F+EHw1v8wtD6z2pbsrDNFk02l0alN1Kb9veAwE2nHy/FH4OwncomvlrVMfW54eIuCKEbkCSPxRx5Fb9gb04FLXXpxpwfSAJYBIpJF8VuH5xuLSRIQ3osUr309QMyZDgNMgEyQ1VB+tr2H0CX5lXm7MB45RCKeP4Fz6HkWlFtLbTtbXCQn5/LoBWxyF7OvCV5Zjiu1bkxIqJnnnuF9UjwWyaf9yZPwXP1wqAG4+ndv2TnpgSPEPlbij/cBCUtvzgIWGfecUCL20Hxra5w5d2IlUrRKPy8N18Q8+T0OxQ28fSpyH5USL17qUHsWzEW6edflsMULngsz/a6derbMHernFoEzWbBNJY1/X9g/sEa4oOmkLb2wJRsUnDGzFL5W6BUGsYVl9+l3474A93XPLJktzw5//3cy0V3gCOWAu0j7gL94XkcpITpOCLt6+vLJh2R/U=
+  location:
+    world: world
+    x: -18.5
+    y: 200.0
+    z: 10.5
+    yaw: -86.0
+media-book:
+  - "<#ff69b4><bold>FLAME FFA MEDIA</bold></#ff69b4>\n\n<black>In order to obtain media on Flame FFA you must complete these requirements:\n\n<dark_gray>- 500 followers at the minimum on TikTok"
+  - "<black><bold>Requirements</bold>\n<dark_gray>- A video with the Flame FFA server's IP shown on screen for at least 10 seconds with <#ff69b4><bold>10K+</bold></#ff69b4><dark_gray> views"
+  - "<black><bold>Keeping Media</bold>\n<dark_gray>To keep your media rank, you must publish a video on the server with the IP shown on screen at least once every 2 weeks."
+  - "<black><bold>How to get media?</bold>\n<dark_gray>If you are eligible for media, open a General Support ticket in #tickets, provide evidence of your eligibility for the rank, and you will receive your role in Discord and in the game."
