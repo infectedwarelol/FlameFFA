@@ -41,3 +41,12 @@ permissions:
   flameffacore.staff.bypass:
     description: ignore the blocked command list
     default: op
+  flamedaily.use:
+    description: claim /daily
+    default: true
+  flamedaily.bonus:
+    description: bonus crate keys with every daily
+    default: false
+  flamedaily.admin:
+    description: /flamedaily reload and reset
+    default: op

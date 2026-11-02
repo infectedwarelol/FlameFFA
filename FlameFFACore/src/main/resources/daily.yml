@@ -1,0 +1,15 @@
+# kill tokens given between the two
+min-tokens: 4
+max-tokens: 16
+# the mean claim  lower amounts get more likely the lower this is  the middle is even
+average: 7.6
+cooldown-hours: 24
+# minimessage  <amount> and <time> are filled in
+claimed: "<gradient:#3ee8f0:#4ef07a><bold>DAILY</bold></gradient> <gray>You got <gold><bold><amount> kill tokens</bold></gold>! Come back in 24 hours."
+wait: "<gradient:#3ee8f0:#4ef07a><bold>DAILY</bold></gradient> <gray>Already claimed. Next daily in <yellow><time></yellow>."
+full: "<red>Make room in your inventory first."
+# players with flamedaily.bonus  the custom rank  also get crate keys with every daily
+bonus-key:
+  crate: mythic
+  amount: 1
+bonus: "<gradient:#3ee8f0:#4ef07a><bold>DAILY</bold></gradient> <gray>Custom rank bonus: <gradient:#f2c14e:#e8442a><bold>Mythic Crate Key</bold></gradient> <gray>x<amount>"
