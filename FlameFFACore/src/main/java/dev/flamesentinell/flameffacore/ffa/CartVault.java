@@ -156,13 +156,17 @@ public final class CartVault implements Listener {
                throw new IllegalStateException("cart vault unreadable", var8);
             }
 
-            this.open.put(var2, var3);
-            return var3;
+            Inventory var9 = this.open.putIfAbsent(var2, var3);
+            return var9 != null ? var9 : var3;
          } else {
             stock(var3);
-            this.open.put(var2, var3);
-            this.save(var1);
-            return var3;
+            Inventory var9 = this.open.putIfAbsent(var2, var3);
+            if (var9 == null) {
+               this.save(var1);
+               return var3;
+            } else {
+               return var9;
+            }
          }
       }
    }

@@ -115,8 +115,8 @@ public final class EnderVault implements Listener {
                throw new IllegalStateException("ender vault unreadable", var9);
             }
 
-            this.open.put(var1, var4);
-            return var4;
+            Inventory var10 = this.open.putIfAbsent(var1, var4);
+            return var10 != null ? var10 : var4;
          } else if (var3 == null) {
             throw new IllegalStateException("no ender vault yet");
          } else {
@@ -129,9 +129,13 @@ public final class EnderVault implements Listener {
             }
 
             var3.getEnderChest().clear();
-            this.open.put(var1, var4);
-            this.save(var1);
-            return var4;
+            Inventory var10 = this.open.putIfAbsent(var1, var4);
+            if (var10 == null) {
+               this.save(var1);
+               return var4;
+            } else {
+               return var10;
+            }
          }
       }
    }
