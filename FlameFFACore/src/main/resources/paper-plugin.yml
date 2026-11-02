@@ -56,3 +56,6 @@ permissions:
   spawnguard.admin:
     description: /spawnguard reload
     default: op
+  flameholo.admin:
+    description: Use /holo
+    default: op

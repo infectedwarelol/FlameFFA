@@ -1,0 +1,47 @@
+# FlameHolograms  floating text placed with /holo
+# every text is minimessage  \n starts a new line
+# {online} and {max} are swapped for the player count
+
+# seconds between redraws of holograms that use {online} or {max}
+refresh-seconds: 5
+
+# used by /holo create when nothing else is set
+defaults:
+  scale: 1.0
+  billboard: center
+  shadow: true
+  see-through: false
+  line-width: 240
+  # none  default  or #AARRGGBB
+  background: none
+
+messages:
+  prefix: "<gray>[<gradient:#f2c14e:#e8552f>Flame</gradient><gray>] "
+  no-permission: "<prefix><red>You do not have permission."
+  players-only: "<prefix><red>Players only, use createat from console."
+  unknown: "<prefix><red>No hologram called <white><name></white>."
+  exists: "<prefix><red><white><name></white> already exists."
+  bad-name: "<prefix><red>Names are letters, numbers, - and _ only."
+  bad-line: "<prefix><red>Line <white><line></white> does not exist, it has <white><count></white>."
+  bad-value: "<prefix><red>Bad value <white><value></white>."
+  bad-world: "<prefix><red>No world called <white><world></white>."
+  created: "<prefix><green>Created <white><name></white>."
+  deleted: "<prefix><gray>Deleted <white><name></white>."
+  edited: "<prefix><green>Updated <white><name></white>."
+  moved: "<prefix><green>Moved <white><name></white> here."
+  teleported: "<prefix><gray>Teleported to <white><name></white>."
+  reloaded: "<prefix><green>Reloaded <white><count></white> hologram(s)."
+  list-header: "<prefix><gray><count> hologram(s)"
+  list-row: "<gray> - <white><name></white> <dark_gray><world> <x> <y> <z></dark_gray> <gray><first>"
+  near-none: "<prefix><gray>No hologram within <white><radius></white> blocks."
+  info: "<prefix><white><name></white> <dark_gray><world> <x> <y> <z> yaw <yaw></dark_gray>\n<gray>scale <white><scale></white> billboard <white><billboard></white> background <white><background></white> shadow <white><shadow></white> see-through <white><seethrough></white> width <white><width></white>"
+  info-line: "<dark_gray><line>. <reset><text>"
+  help: |-
+    <gradient:#f2c14e:#e8552f><bold>Holograms</bold></gradient>
+    <gray>/holo create <white><name> <text></white> at your eyes
+    <gray>/holo createat <white><name> <world> <x> <y> <z> <text></white>
+    <gray>/holo addline|setline|insertline|removeline <white><name> [line] [text]</white>
+    <gray>/holo movehere|tp|delete|info <white><name></white>
+    <gray>/holo scale|billboard|background|shadow|seethrough|width <white><name> <value></white>
+    <gray>/holo list, near [radius], reload
+    <dark_gray>\n in text starts a new line  {online} {max} show the player count
