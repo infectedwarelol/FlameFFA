@@ -284,6 +284,10 @@ public final class FlameFFACore extends JavaPlugin {
          this.tasks.cancelAll();
       }
 
+      if (this.configs != null) {
+         this.configs.flushWrites();
+      }
+
       if (this.database != null) {
          this.database.close();
       }

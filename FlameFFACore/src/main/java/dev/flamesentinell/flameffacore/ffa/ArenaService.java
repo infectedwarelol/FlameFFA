@@ -118,11 +118,7 @@ public final class ArenaService implements Listener {
          }
       });
 
-      try {
-         var1.save(this.streakFile());
-      } catch (IOException var3) {
-         this.plugin.getLogger().warning("could not save streaks " + var3.getMessage());
-      }
+      this.plugin.configs().saveAsync(var1, this.streakFile());
    }
 
    @EventHandler(

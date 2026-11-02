@@ -7,13 +7,18 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
-import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.nio.file.AtomicMoveNotSupportedException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 import net.kyori.adventure.text.Component;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.configuration.file.YamlConfiguration;
 
 public final class ConfigManager {
+   private final Map<File, String> pendingWrites = new ConcurrentHashMap<>();
    private static final String[] FILES = new String[]{"config.yml", "messages.yml", "crates.yml", "ranks.yml", "chat.yml", "cosmetics.yml"};
    private static final Map<Integer, String[]> RETUNED = Map.ofEntries(
       Map.entry(
@@ -136,7 +141,7 @@ public final class ConfigManager {
       )
    );
    private final FlameFFACore plugin;
-   private final Map<String, FileConfiguration> loaded = new HashMap<>();
+   private final Map<String, FileConfiguration> loaded = new ConcurrentHashMap<>();
 
    public ConfigManager(FlameFFACore plugin) {
       this.plugin = plugin;
@@ -254,6 +259,41 @@ public final class ConfigManager {
 
    public FileConfiguration chat() {
       return this.get("chat.yml");
+   }
+
+   public void saveAsync(FileConfiguration cfg, File file) {
+      this.pendingWrites.put(file, cfg.saveToString());
+      if (!this.plugin.isEnabled() || this.plugin.tasks() == null || this.plugin.tasks().async(this::flushWrites) == null) {
+         this.flushWrites();
+      }
+   }
+
+   public void saveAsync(String name) {
+      this.saveAsync(this.get(name), new File(this.plugin.getDataFolder(), name));
+   }
+
+   public synchronized void flushWrites() {
+      for (File file : this.pendingWrites.keySet()) {
+         String data = this.pendingWrites.remove(file);
+         if (data != null) {
+            try {
+               File parent = file.getParentFile();
+               if (parent != null) {
+                  parent.mkdirs();
+               }
+
+               Path temp = file.toPath().resolveSibling(file.getName() + ".tmp");
+               Files.writeString(temp, data, StandardCharsets.UTF_8);
+               try {
+                  Files.move(temp, file.toPath(), StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.ATOMIC_MOVE);
+               } catch (AtomicMoveNotSupportedException unsupported) {
+                  Files.move(temp, file.toPath(), StandardCopyOption.REPLACE_EXISTING);
+               }
+            } catch (IOException failure) {
+               this.plugin.getSLF4JLogger().error("could not save {}", file.getName(), failure);
+            }
+         }
+      }
    }
 
    public Component msg(String path, String... kv) {

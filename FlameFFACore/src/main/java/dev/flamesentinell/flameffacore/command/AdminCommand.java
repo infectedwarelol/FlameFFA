@@ -116,13 +116,7 @@ public final class AdminCommand implements BasicCommand {
          cfg.set("arena.spawn.yaw", Math.round(at.getYaw()));
          cfg.set("arena.spawn.pitch", Math.round(at.getPitch()));
 
-         try {
-            cfg.save(new File(this.plugin.getDataFolder(), "config.yml"));
-         } catch (IOException var6) {
-            this.plugin.getSLF4JLogger().error("could not save config.yml", var6);
-            sender.sendMessage(this.plugin.configs().msg("spawn.save-failed"));
-            return;
-         }
+         this.plugin.configs().saveAsync("config.yml");
 
          this.audit(sender, "setspawn", at.getWorld().getName(), at.getBlockX() + " " + at.getBlockY() + " " + at.getBlockZ());
          sender.sendMessage(

@@ -120,13 +120,8 @@ public final class Safezone {
    }
 
    private boolean save(FileConfiguration cfg) {
-      try {
-         cfg.save(new File(this.plugin.getDataFolder(), "config.yml"));
-         return true;
-      } catch (IOException var3) {
-         this.plugin.getSLF4JLogger().error("could not save config.yml", var3);
-         return false;
-      }
+      this.plugin.configs().saveAsync(cfg, new File(this.plugin.getDataFolder(), "config.yml"));
+      return true;
    }
 
    public void tick(Player player) {

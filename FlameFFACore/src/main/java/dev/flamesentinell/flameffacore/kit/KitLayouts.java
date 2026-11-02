@@ -128,13 +128,7 @@ public final class KitLayouts implements Listener {
          var4.set(var2, var5);
       }
 
-      this.dir.mkdirs();
-
-      try {
-         var4.save(new File(this.dir, var1 + ".yml"));
-      } catch (IOException var10) {
-         this.plugin.getLogger().warning("kit layout save failed " + var10.getMessage());
-      }
+      this.plugin.configs().saveAsync(var4, new File(this.dir, var1 + ".yml"));
    }
 
    private static void say(Player var0, String var1) {

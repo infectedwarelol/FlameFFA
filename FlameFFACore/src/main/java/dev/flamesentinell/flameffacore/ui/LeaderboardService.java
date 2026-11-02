@@ -16,14 +16,17 @@ import org.bukkit.entity.Entity;
 import org.bukkit.entity.TextDisplay;
 import org.bukkit.entity.Display.Billboard;
 import org.bukkit.entity.TextDisplay.TextAlignment;
-import org.bukkit.scheduler.BukkitTask;
+import io.papermc.paper.threadedregions.scheduler.ScheduledTask;
+import dev.flamesentinell.flameffacore.util.Tasks;
+import java.util.Collections;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 public final class LeaderboardService {
    private static final String TAG = "flameffacore_board";
    public static final List<String> METRICS = List.of("kills", "deaths", "streak", "playtime");
    private final FlameFFACore plugin;
-   private final List<TextDisplay> live = new ArrayList<>();
-   private BukkitTask task;
+   private final List<TextDisplay> live = new CopyOnWriteArrayList<>();
+   private ScheduledTask task;
 
    public LeaderboardService(FlameFFACore plugin) {
       this.plugin = plugin;
@@ -41,7 +44,7 @@ public final class LeaderboardService {
          this.task.cancel();
       }
 
-      this.task = Bukkit.getScheduler().runTaskTimer(this.plugin, this::refresh, 40L, seconds * 20L);
+      this.task = this.plugin.tasks().globalTimer(task -> this.refresh(), 40L, seconds * 20L);
    }
 
    public void shutdown() {
@@ -54,6 +57,11 @@ public final class LeaderboardService {
    }
 
    public int sweep() {
+      if (Tasks.FOLIA) {
+         this.live.clear();
+         return 0;
+      }
+
       int gone = 0;
 
       for (World world : Bukkit.getWorlds()) {
@@ -71,8 +79,12 @@ public final class LeaderboardService {
 
    private void despawn() {
       for (TextDisplay display : this.live) {
-         if (display != null && !display.isDead()) {
-            display.remove();
+         if (display != null) {
+            this.plugin.tasks().runOn(display, () -> {
+               if (!display.isDead()) {
+                  display.remove();
+               }
+            });
          }
       }
 
@@ -124,11 +136,7 @@ public final class LeaderboardService {
    }
 
    private void save() {
-      try {
-         this.plugin.configs().main().save(new File(this.plugin.getDataFolder(), "config.yml"));
-      } catch (IOException var2) {
-         this.plugin.getSLF4JLogger().error("could not save the board list", var2);
-      }
+      this.plugin.configs().saveAsync("config.yml");
    }
 
    public int count() {
@@ -150,22 +158,35 @@ public final class LeaderboardService {
    }
 
    private void spawn() {
-      for (Object raw : this.boards()) {
-         if (raw instanceof Map<?, ?> map) {
+      List<?> placed = this.boards();
+      this.live.clear();
+      this.live.addAll(Collections.nCopies(placed.size(), null));
+
+      for (int index = 0; index < placed.size(); index++) {
+         if (placed.get(index) instanceof Map<?, ?> map) {
             Location at = read(map);
             if (at != null) {
-               TextDisplay display = (TextDisplay)at.getWorld().spawn(at, TextDisplay.class, d -> {
-                  d.setBillboard(Billboard.CENTER);
-                  d.setAlignment(TextAlignment.CENTER);
-                  d.setShadowed(true);
-                  d.setSeeThrough(false);
-                  d.setPersistent(false);
-                  d.setViewRange(1.2F);
-                  d.addScoreboardTag("flameffacore_board");
-                  d.text(this.plugin.configs().msg("leaderboard.loading"));
+               int slot = index;
+               this.plugin.tasks().runAt(at, () -> {
+                  TextDisplay display = (TextDisplay)at.getWorld().spawn(at, TextDisplay.class, d -> {
+                     d.setBillboard(Billboard.CENTER);
+                     d.setAlignment(TextAlignment.CENTER);
+                     d.setShadowed(true);
+                     d.setSeeThrough(false);
+                     d.setPersistent(false);
+                     d.setViewRange(1.2F);
+                     d.addScoreboardTag("flameffacore_board");
+                     d.text(this.plugin.configs().msg("leaderboard.loading"));
+                  });
+                  at.getWorld().setChunkForceLoaded(at.getBlockX() >> 4, at.getBlockZ() >> 4, true);
+                  if (slot < this.live.size()) {
+                     this.live.set(slot, display);
+                  }
+
+                  if (Tasks.FOLIA) {
+                     this.refreshOne(slot);
+                  }
                });
-               at.getWorld().setChunkForceLoaded(at.getBlockX() >> 4, at.getBlockZ() >> 4, true);
-               this.live.add(display);
             }
          }
       }
@@ -174,13 +195,20 @@ public final class LeaderboardService {
    }
 
    private void refresh() {
+      this.refreshOne(-1);
+   }
+
+   private void refreshOne(int only) {
       List<?> placed = this.boards();
       if (!placed.isEmpty() && !this.live.isEmpty()) {
          this.plugin.async(() -> {
             List<Component> rendered = new ArrayList<>();
 
-            for (Object raw : placed) {
-               if (raw instanceof Map<?, ?> map) {
+            for (int index = 0; index < placed.size(); index++) {
+               Object raw = placed.get(index);
+               if (only >= 0 && index != only) {
+                  rendered.add(null);
+               } else if (raw instanceof Map<?, ?> map) {
                   Object metricRaw = map.get("metric");
                   Object sizeRaw = map.get("size");
                   String metric = metricRaw == null ? "kills" : String.valueOf(metricRaw);
@@ -191,14 +219,17 @@ public final class LeaderboardService {
                }
             }
 
-            this.plugin.sync(() -> {
-               for (int i = 0; i < this.live.size() && i < rendered.size(); i++) {
-                  TextDisplay display = this.live.get(i);
-                  if (display != null && !display.isDead()) {
-                     display.text(rendered.get(i));
-                  }
+            for (int i = 0; i < this.live.size() && i < rendered.size(); i++) {
+               TextDisplay display = this.live.get(i);
+               Component text = rendered.get(i);
+               if (display != null && text != null) {
+                  this.plugin.tasks().runOn(display, () -> {
+                     if (!display.isDead()) {
+                        display.text(text);
+                     }
+                  });
                }
-            });
+            }
          });
       }
    }
