@@ -89,6 +89,18 @@ public final class LeaderboardService {
       }
 
       this.live.clear();
+      if (Tasks.FOLIA) {
+         return;
+      }
+
+      for (Object rawBoard : this.boards()) {
+         if (rawBoard instanceof Map<?, ?> map) {
+            Location at = read(map);
+            if (at != null && at.getWorld() != null) {
+               at.getWorld().setChunkForceLoaded(at.getBlockX() >> 4, at.getBlockZ() >> 4, false);
+            }
+         }
+      }
    }
 
    private List<?> boards() {
@@ -115,7 +127,7 @@ public final class LeaderboardService {
 
       for (int i = 0; i < list.size(); i++) {
          Location spot = read(list.get(i));
-         if (spot != null && spot.getWorld().equals(at.getWorld())) {
+         if (spot != null && at.getWorld() != null && spot.getWorld().equals(at.getWorld())) {
             double distance = spot.distanceSquared(at);
             if (distance <= closest) {
                closest = distance;
