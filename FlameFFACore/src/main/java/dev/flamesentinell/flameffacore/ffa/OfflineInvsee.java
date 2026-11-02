@@ -4,11 +4,14 @@ import dev.flamesentinell.flameffacore.FlameFFACore;
 import java.io.File;
 import java.nio.file.Files;
 import java.nio.file.StandardCopyOption;
-import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.concurrent.TimeoutException;
+import java.util.concurrent.ExecutionException;
+import java.util.ArrayList;
 import java.util.Locale;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
@@ -40,7 +43,7 @@ public final class OfflineInvsee implements Listener {
    private static final int OFFHAND = 40;
    private static final String[] EQUIP = new String[]{"head", "chest", "legs", "feet", "offhand"};
    private final FlameFFACore plugin;
-   private final Map<UUID, Inventory> open = new HashMap<>();
+   private final Map<UUID, Inventory> open = new ConcurrentHashMap<>();
 
    private OfflineInvsee(FlameFFACore var1) {
       this.plugin = var1;
@@ -282,23 +285,31 @@ public final class OfflineInvsee implements Listener {
    )
    public void onPreLogin(AsyncPlayerPreLoginEvent var1) {
       if (var1.getLoginResult() == Result.ALLOWED && this.open.containsKey(var1.getUniqueId())) {
-         CompletableFuture var2 = new CompletableFuture();
-         Bukkit.getScheduler().runTask(this.plugin, () -> {
-            try {
-               Inventory var3 = this.open.get(var1.getUniqueId());
-               if (var3 != null) {
-                  for (HumanEntity var5 : List.copyOf(var3.getViewers())) {
-                     var5.closeInventory();
-                  }
-               }
-            } finally {
-               var2.complete(null);
-            }
-         });
+         Inventory var3 = this.open.get(var1.getUniqueId());
+         if (var3 != null) {
+            List<CompletableFuture<Void>> closing = new ArrayList<>();
 
-         try {
-            var2.get(5L, TimeUnit.SECONDS);
-         } catch (Exception var4) {
+            for (HumanEntity var5 : List.copyOf(var3.getViewers())) {
+               CompletableFuture<Void> closed = new CompletableFuture<>();
+               closing.add(closed);
+               if (this.plugin.tasks().entity(var5, () -> {
+                  try {
+                     var5.closeInventory();
+                  } finally {
+                     closed.complete(null);
+                  }
+               }) == null) {
+                  closed.complete(null);
+               }
+            }
+
+            try {
+               CompletableFuture.allOf(closing.toArray(CompletableFuture[]::new)).get(5L, TimeUnit.SECONDS);
+            } catch (InterruptedException interrupted) {
+               Thread.currentThread().interrupt();
+            } catch (ExecutionException | TimeoutException slow) {
+               this.plugin.getSLF4JLogger().warn("offline invsee of {} did not close in time", var1.getName());
+            }
          }
       }
    }

@@ -1,6 +1,7 @@
 package dev.flamesentinell.flameffacore.ffa;
 
 import dev.flamesentinell.flameffacore.FlameFFACore;
+import dev.flamesentinell.flameffacore.util.Tasks;
 import dev.flamesentinell.flameffacore.item.ItemKeys;
 import dev.flamesentinell.flameffacore.storage.BlobStore;
 import dev.flamesentinell.flameffacore.util.Bots;
@@ -53,7 +54,7 @@ public final class ArenaService implements Listener {
       this.plugin = var1;
       this.loadStreaks();
       EnderVault.start(var1);
-      Bukkit.getScheduler().runTask(var1, this::upgradeDashSpears);
+      var1.async(this::upgradeDashSpears);
    }
 
    private void upgradeDashSpears() {
@@ -168,7 +169,7 @@ public final class ArenaService implements Listener {
          this.taggedBy.computeIfAbsent(var1.getUniqueId(), var0 -> ConcurrentHashMap.newKeySet()).add(var2.getUniqueId());
          if (var4) {
             var1.sendMessage(this.plugin.configs().msg("arena.combat-tagged", "seconds", String.valueOf(var3)));
-            Bukkit.getScheduler().runTaskLater(this.plugin, () -> {
+            this.plugin.tasks().entityLater(var1, () -> {
                if (var1.isOnline() && !this.inCombat(var1)) {
                   this.taggedBy.remove(var1.getUniqueId());
                   var1.sendMessage(this.plugin.configs().msg("arena.combat-over"));
@@ -208,7 +209,7 @@ public final class ArenaService implements Listener {
          String var3 = PlainTextComponentSerializer.plainText().serialize(var1.message()).trim();
          if (var3.equalsIgnoreCase(var2.trim())) {
             Player var4 = var1.getPlayer();
-            Bukkit.getScheduler().runTask(this.plugin, () -> {
+            this.plugin.sync(var4, () -> {
                int var2x = this.forgive(var4);
                var4.sendMessage(this.plugin.configs().msg(var2x > 0 ? "arena.forgave" : "arena.forgave-none", "count", String.valueOf(var2x)));
             });
@@ -236,7 +237,7 @@ public final class ArenaService implements Listener {
    public void onJoin(PlayerJoinEvent var1) {
       Player var2 = var1.getPlayer();
       if (!Bots.is(var2)) {
-         var2.teleport(this.spawn());
+         Tasks.move(var2, this.spawn());
          this.plugin.cooldowns().set(var2.getUniqueId(), "spawnprot", this.plugin.configs().main().getInt("arena.spawn-protection-seconds", 5));
          this.plugin.async(() -> {
             this.plugin.kitCooldowns().load(var2.getUniqueId());
@@ -250,7 +251,7 @@ public final class ArenaService implements Listener {
       Player var2 = var1.getPlayer();
       if (!Bots.involved(var2)) {
          UUID var3 = var2.getUniqueId();
-         Bukkit.getScheduler().runTask(this.plugin, this::saveStreaks);
+         this.plugin.sync(this::saveStreaks);
          this.taggedBy.remove(var3);
          this.plugin.safezone().forget(var3);
          boolean var4 = false;
