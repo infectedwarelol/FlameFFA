@@ -1,4 +1,3 @@
-// author flamesentinell
 package dev.flamesentinell.flameffacore.weapon;
 
 import dev.flamesentinell.flameffacore.FlameFFACore;
@@ -30,15 +29,10 @@ import org.bukkit.event.entity.EntityRegainHealthEvent.RegainReason;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.util.Vector;
 
-/**
- * a mace reskinned as a scythe  a smash hit steals extra hearts for the wielder
- * and shift plus right click cleaves everyone in an arc in front
- */
 public final class ReaperScythe implements CustomWeapon, Listener {
     public static final String ID = "reaper-scythe";
     private static final Particle.DustOptions BLOOD = new Particle.DustOptions(Color.fromRGB(150, 12, 24), 1.1F);
     private final FlameFFACore plugin;
-    // the cleave hits through the same damage event so its own hits must not count as smashes
     private boolean cleaving;
 
     public ReaperScythe(FlameFFACore plugin) {
@@ -74,14 +68,12 @@ public final class ReaperScythe implements CustomWeapon, Listener {
         return ID.equals(plugin.weapons().weaponId(p.getInventory().getItemInMainHand()));
     }
 
-    // ---------- lifesteal on smash hits ----------
 
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void onHit(EntityDamageByEntityEvent event) {
         if (cleaving || event.getCause() != DamageCause.ENTITY_ATTACK) return;
         if (!(event.getDamager() instanceof Player attacker) || !(event.getEntity() instanceof LivingEntity victim)) return;
         if (!holding(attacker) || event.getFinalDamage() <= 0) return;
-        // the same test vanilla uses for a mace smash
         if (attacker.getFallDistance() <= 1.5F || attacker.isGliding()) return;
         double heal = cfg().getDouble(path() + ".lifesteal-hearts", 4.0) * 2.0;
         double before = attacker.getHealth();
@@ -104,7 +96,6 @@ public final class ReaperScythe implements CustomWeapon, Listener {
         world.playSound(attacker.getLocation(), Sound.ENTITY_WARDEN_HEARTBEAT, 1.0F, 1.2F);
     }
 
-    // ---------- cleave on shift plus right click ----------
 
     private boolean hittable(LivingEntity e, Player owner) {
         if (e == owner || !e.isValid() || e.isDead() || e instanceof ArmorStand || e.isInvulnerable()) return false;
@@ -113,8 +104,7 @@ public final class ReaperScythe implements CustomWeapon, Listener {
         return !plugin.safezone().contains(e.getLocation());
     }
 
-    /** raw damage that lands as about want health on this target  vanilla armour toughness protection and resistance */
-    static double rawFor(LivingEntity e, double want, int breach) {
+        static double rawFor(LivingEntity e, double want, int breach) {
         double armor = attr(e, org.bukkit.attribute.Attribute.ARMOR), tough = attr(e, org.bukkit.attribute.Attribute.ARMOR_TOUGHNESS);
         int epf = 0;
         org.bukkit.inventory.EntityEquipment eq = e.getEquipment();
@@ -137,7 +127,6 @@ public final class ReaperScythe implements CustomWeapon, Listener {
 
     private static double after(double d, double armor, double tough, int breach) {
         double g = Math.max(armor * 0.2, Math.min(20.0, armor - d / (2.0 + tough / 4.0)));
-        // breach takes fifteen points per level straight off the armour share  four levels wipe it out
         double h = Math.max(0.0, Math.min(1.0, g / 25.0 - 0.15 * breach));
         return d * (1.0 - h);
     }
@@ -153,7 +142,6 @@ public final class ReaperScythe implements CustomWeapon, Listener {
         FileConfiguration c = cfg();
         double range = c.getDouble(path() + ".range", 4.0);
         double half = Math.toRadians(c.getDouble(path() + ".arc-degrees", 120.0) / 2.0);
-        // the cleave aims at a set number of hearts after armour  protection and resistance  so gear does not swing it
         double hearts = c.getDouble(path() + ".cleave-hearts", 4.0);
         double push = c.getDouble(path() + ".cleave-knockback", 0.6);
         Location eye = player.getEyeLocation();
@@ -186,7 +174,6 @@ public final class ReaperScythe implements CustomWeapon, Listener {
         }
         player.swingMainHand();
         World world = player.getWorld();
-        // the arc drawn as sweeps and soul flames across the front
         Location base = player.getLocation().add(0, 1.1, 0);
         for (int i = -3; i <= 3; i++) {
             Vector dir = look.clone().rotateAroundY(half * i / 3.0);

@@ -3,6 +3,7 @@ version: '1.0.0'
 main: dev.flamesentinell.flameffacore.FlameFFACore
 loader: dev.flamesentinell.flameffacore.FlameFFACoreLoader
 api-version: '1.21'
+folia-supported: true
 authors: [ flamesentinell ]
 description: FFA core for spear and mace kits
 
@@ -94,4 +95,10 @@ permissions:
     default: op
   flametweaks.chat.bypass:
     description: skip the chat cooldown
+    default: op
+  flameffacore.build:
+    description: build and break anywhere
+    default: op
+  flameffacore.afk.exempt:
+    description: never moved for being afk
     default: op
