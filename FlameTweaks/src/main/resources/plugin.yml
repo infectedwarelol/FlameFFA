@@ -1,0 +1,65 @@
+name: FlameTweaks
+version: 1.6.1
+main: dev.flamesentinell.flametweaks.FlameTweaks
+api-version: '1.21.11'
+author: flamesentinell
+description: small world rules for flameffa  trapdoors only flip in creative
+commands:
+  flametweaks:
+    description: reload the config
+    permission: flametweaks.admin
+  tempban:
+    description: ban a player for 1 to 365 days
+    usage: /tempban <player> <days> [reason]
+  permban:
+    description: ban a player permanently
+    usage: /permban <player> [reason]
+  unban:
+    description: lift a ban
+    usage: /unban <player>
+  vanish:
+    description: hide from players and tab  fly  and be invulnerable  admins and up
+    aliases: [v]
+    permission: flametweaks.vanish
+  trash:
+    description: open a trash can  everything left in it is deleted when you close it
+    aliases: [disposal, bin]
+  freeze:
+    description: freeze or unfreeze a player for a screenshare
+    usage: /freeze <player>
+    aliases: [ss]
+  invsee:
+    description: see a player's inventory
+    usage: /invsee <player>
+    permission: flametweaks.invsee
+  ecsee:
+    description: see a player's ender chest
+    usage: /ecsee <player>
+    permission: flametweaks.invsee
+  watch:
+    description: record every tick and input of a player for cheat review
+    usage: /watch add|remove|list <player>
+    permission: flametweaks.watch
+permissions:
+  flametweaks.watch:
+    default: op
+  flametweaks.vanish:
+    description: use vanish  given to the admin group in luckperms
+    default: op
+  flametweaks.ban:
+    description: tempban permban and unban  given to the mod group in luckperms
+    default: false
+  flametweaks.tempban.limited:
+    description: tempban only  up to limited-tempban-max-days  given to trial ssers in luckperms
+    default: false
+  flametweaks.ban.override:
+    description: may ban other staff
+    default: false
+  flametweaks.invsee:
+    default: op
+  flametweaks.invsee.edit:
+    default: op
+  flametweaks.admin:
+    default: op
+  flametweaks.chat.bypass:
+    default: op
