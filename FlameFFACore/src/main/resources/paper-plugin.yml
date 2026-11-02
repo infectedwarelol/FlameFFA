@@ -53,3 +53,6 @@ permissions:
   windbrake.admin:
     description: /windbrake reload
     default: op
+  spawnguard.admin:
+    description: /spawnguard reload
+    default: op
