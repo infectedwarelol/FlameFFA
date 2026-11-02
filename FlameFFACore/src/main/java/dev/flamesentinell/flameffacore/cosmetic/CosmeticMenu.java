@@ -13,6 +13,8 @@ import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.inventory.InventoryClickEvent;
+import org.bukkit.inventory.InventoryHolder;
+import org.bukkit.event.inventory.InventoryDragEvent;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.persistence.PersistentDataContainer;
@@ -35,7 +37,9 @@ public final class CosmeticMenu implements Listener {
    }
 
    public void open(Player player) {
-      Inventory menu = Bukkit.createInventory(null, 36, this.plugin.configs().msg("cosmetics.title"));
+      CosmeticMenu.Holder holder = new CosmeticMenu.Holder();
+      Inventory menu = Bukkit.createInventory(holder, 36, this.plugin.configs().msg("cosmetics.title"));
+      holder.inventory = menu;
       int row = 0;
 
       for (String slot : List.of("kill", "aura")) {
@@ -114,7 +118,12 @@ public final class CosmeticMenu implements Listener {
 
    @EventHandler
    public void onClick(InventoryClickEvent event) {
-      if (event.getWhoClicked() instanceof Player player) {
+      boolean menu = event.getView().getTopInventory().getHolder(false) instanceof CosmeticMenu.Holder;
+      if (menu) {
+         event.setCancelled(true);
+      }
+
+      if (event.getWhoClicked() instanceof Player player && (!menu || event.getClickedInventory() == event.getView().getTopInventory())) {
          ItemStack clicked = event.getCurrentItem();
          if (clicked != null && clicked.hasItemMeta()) {
             PersistentDataContainer pdc = clicked.getItemMeta().getPersistentDataContainer();
@@ -140,6 +149,21 @@ public final class CosmeticMenu implements Listener {
                }
             }
          }
+      }
+   }
+
+   @EventHandler
+   public void onDrag(InventoryDragEvent event) {
+      if (event.getView().getTopInventory().getHolder(false) instanceof CosmeticMenu.Holder) {
+         event.setCancelled(true);
+      }
+   }
+
+   private static final class Holder implements InventoryHolder {
+      private Inventory inventory;
+
+      public Inventory getInventory() {
+         return this.inventory;
       }
    }
 }

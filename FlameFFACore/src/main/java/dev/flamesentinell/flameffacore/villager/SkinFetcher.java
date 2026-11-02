@@ -15,10 +15,17 @@ import java.util.regex.Pattern;
 import org.bukkit.Bukkit;
 
 public final class SkinFetcher {
+   private static final Pattern NAME = Pattern.compile("[A-Za-z0-9_]{1,16}");
+   private static final HttpClient CLIENT = HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(8L)).build();
+
    private SkinFetcher() {
    }
 
    public static SkinFetcher.Skin fetch(String name) {
+      if (name == null || !NAME.matcher(name).matches()) {
+         return null;
+      }
+
       try {
          String head = get("https://api.mojang.com/users/profiles/minecraft/" + name);
          String id = find(head, "\"id\"\\s*:\\s*\"([0-9a-fA-F]{32})\"");
@@ -45,7 +52,7 @@ public final class SkinFetcher {
 
    private static String get(String url) throws Exception {
       HttpRequest request = HttpRequest.newBuilder(URI.create(url)).timeout(Duration.ofSeconds(8L)).header("accept", "application/json").GET().build();
-      HttpResponse<String> response = HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(8L)).build().send(request, BodyHandlers.ofString());
+      HttpResponse<String> response = CLIENT.send(request, BodyHandlers.ofString());
       return response.statusCode() == 200 ? response.body() : "";
    }
 
