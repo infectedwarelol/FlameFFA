@@ -1,0 +1,2 @@
+# FlameFFA
+FlameFFA Core Plugin
