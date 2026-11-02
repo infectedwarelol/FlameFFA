@@ -36,7 +36,6 @@ import org.bukkit.event.inventory.InventoryCloseEvent;
 import org.bukkit.event.inventory.InventoryDragEvent;
 import org.bukkit.event.inventory.InventoryOpenEvent;
 import org.bukkit.event.inventory.InventoryType;
-import org.bukkit.event.player.PlayerCommandPreprocessEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.event.server.PluginDisableEvent;
@@ -151,21 +150,9 @@ public final class EnderVault implements Listener {
       }
    }
 
-   @EventHandler(
-      priority = EventPriority.LOWEST,
-      ignoreCancelled = true
-   )
-   public void onEcsee(PlayerCommandPreprocessEvent var1) {
-      String[] var2 = var1.getMessage().trim().split("\\s+");
-      if (var2.length >= 2) {
-         String var3 = var2[0].toLowerCase(Locale.ROOT);
-         if (var3.equals("/ecsee") || var3.equals("/flametweaks:ecsee")) {
-            Player var4 = var1.getPlayer();
-            if (var4.hasPermission("flametweaks.invsee") && Bukkit.getPlayerExact(var2[1]) == null) {
-               var1.setCancelled(true);
-               this.showOffline(var4, var2[1]);
-            }
-         }
+   public static void openOffline(Player viewer, String name) {
+      if (instance != null) {
+         instance.showOffline(viewer, name);
       }
    }
 

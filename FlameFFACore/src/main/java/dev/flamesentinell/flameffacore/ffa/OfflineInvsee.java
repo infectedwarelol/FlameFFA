@@ -29,7 +29,6 @@ import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.inventory.InventoryCloseEvent;
 import org.bukkit.event.inventory.InventoryDragEvent;
 import org.bukkit.event.player.AsyncPlayerPreLoginEvent;
-import org.bukkit.event.player.PlayerCommandPreprocessEvent;
 import org.bukkit.event.player.AsyncPlayerPreLoginEvent.Result;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.InventoryHolder;
@@ -91,20 +90,9 @@ public final class OfflineInvsee implements Listener {
       return var1;
    }
 
-   @EventHandler(
-      priority = EventPriority.HIGHEST
-   )
-   public void onInvsee(PlayerCommandPreprocessEvent var1) {
-      String[] var2 = var1.getMessage().trim().split("\\s+");
-      if (var2.length >= 2) {
-         String var3 = var2[0].toLowerCase(Locale.ROOT);
-         if (var3.equals("/invsee") || var3.equals("/flametweaks:invsee")) {
-            Player var4 = var1.getPlayer();
-            if (var4.hasPermission("flametweaks.invsee") && Bukkit.getPlayerExact(var2[1]) == null) {
-               var1.setCancelled(true);
-               this.showOffline(var4, var2[1]);
-            }
-         }
+   public static void openOffline(Player viewer, String name) {
+      if (instance != null) {
+         instance.showOffline(viewer, name);
       }
    }
 
@@ -113,65 +101,90 @@ public final class OfflineInvsee implements Listener {
       if (var3 != null && var3.hasPlayedBefore()) {
          UUID var4 = var3.getUniqueId();
          Inventory var5 = this.open.get(var4);
-         if (var5 == null) {
+         if (var5 != null) {
+            var1.openInventory(var5);
+         } else {
             File var6 = this.file(var4);
-            if (!var6.exists()) {
-               say(var1, "<red>No saved inventory for " + var2 + ".");
-               return;
-            }
+            String var19 = var3.getName() != null ? var3.getName() : var2;
+            this.plugin.async(() -> {
+               Map var7;
+               try {
+                  var7 = var6.exists() ? Nbt.readGzip(Files.readAllBytes(var6.toPath())) : null;
+               } catch (Exception var17) {
+                  this.plugin.getLogger().warning("offline invsee of " + var2 + " failed  " + var17);
+                  this.plugin.sync(var1, () -> say(var1, "<red>Could not read " + var2 + "'s inventory."));
+                  return;
+               }
 
-            try {
-               Map var7 = Nbt.readGzip(Files.readAllBytes(var6.toPath()));
-               int var8 = var7.get("DataVersion") instanceof Integer var9 ? var9 : -1;
-               boolean var18 = var8 != Bukkit.getUnsafe().getDataVersion();
-               String var19 = var3.getName() != null ? var3.getName() : var2;
-               OfflineInvsee.Holder var11 = new OfflineInvsee.Holder(var4, var19, var18);
-               var5 = Bukkit.createInventory(
-                  var11, 45, MiniMessage.miniMessage().deserialize(var19 + "'s inventory (offline" + (var18 ? ", view only" : "") + ")")
-               );
-               var11.inventory = var5;
-               List var12 = Nbt.list(var7.get("Inventory"));
-               if (var12 != null) {
-                  for (Object var14 : var12) {
-                     Map var15 = (Map)var14;
-                     int var16 = ((Number)var15.getOrDefault("Slot", (byte)-1)).intValue();
-                     if (var16 >= 0 && var16 < 36) {
-                        var5.setItem(guiSlot(var16), toStack(var15, var8));
-                     } else if (var16 >= 100 && var16 <= 103) {
-                        var5.setItem(36 + (103 - var16), toStack(var15, var8));
-                     } else if (var16 == -106) {
-                        var5.setItem(40, toStack(var15, var8));
+               this.plugin.sync(var1, () -> {
+                  if (var7 == null) {
+                     say(var1, "<red>No saved inventory for " + var2 + ".");
+                  } else if (var1.isOnline()) {
+                     Inventory var20 = this.open.get(var4);
+                     if (var20 == null) {
+                        try {
+                           var20 = this.build(var4, var19, var7);
+                        } catch (Exception var18) {
+                           this.plugin.getLogger().warning("offline invsee of " + var2 + " failed  " + var18);
+                           say(var1, "<red>Could not read " + var2 + "'s inventory.");
+                           return;
+                        }
+
+                        Inventory var21 = this.open.putIfAbsent(var4, var20);
+                        if (var21 != null) {
+                           var20 = var21;
+                        }
                      }
+
+                     var1.openInventory(var20);
                   }
-               }
-
-               if (var7.get("equipment") instanceof Map var20) {
-                  for (int var23 = 0; var23 < EQUIP.length; var23++) {
-                     if (var20.get(EQUIP[var23]) instanceof Map var26) {
-                        var5.setItem(36 + var23, toStack(var26, var8));
-                     }
-                  }
-               }
-
-               ItemStack var21 = new ItemStack(Material.GRAY_STAINED_GLASS_PANE);
-               var21.editMeta(var0 -> var0.displayName(MiniMessage.miniMessage().deserialize("<gray>")));
-
-               for (int var24 = 41; var24 < 45; var24++) {
-                  var5.setItem(var24, var21);
-               }
-
-               this.open.put(var4, var5);
-            } catch (Exception var17) {
-               this.plugin.getLogger().warning("offline invsee of " + var2 + " failed  " + var17);
-               say(var1, "<red>Could not read " + var2 + "'s inventory.");
-               return;
-            }
+               });
+            });
          }
-
-         var1.openInventory(var5);
       } else {
          say(var1, "<red>" + var2 + " has never played here.");
       }
+   }
+
+   private Inventory build(UUID var4, String var19, Map var7) throws Exception {
+      int var8 = var7.get("DataVersion") instanceof Integer var9 ? var9 : -1;
+      boolean var18 = var8 != Bukkit.getUnsafe().getDataVersion();
+      OfflineInvsee.Holder var11 = new OfflineInvsee.Holder(var4, var19, var18);
+      Inventory var5 = Bukkit.createInventory(
+         var11, 45, MiniMessage.miniMessage().deserialize(MiniMessage.miniMessage().escapeTags(var19) + "'s inventory (offline" + (var18 ? ", view only" : "") + ")")
+      );
+      var11.inventory = var5;
+      List var12 = Nbt.list(var7.get("Inventory"));
+      if (var12 != null) {
+         for (Object var14 : var12) {
+            Map var15 = (Map)var14;
+            int var16 = ((Number)var15.getOrDefault("Slot", (byte)-1)).intValue();
+            if (var16 >= 0 && var16 < 36) {
+               var5.setItem(guiSlot(var16), toStack(var15, var8));
+            } else if (var16 >= 100 && var16 <= 103) {
+               var5.setItem(36 + (103 - var16), toStack(var15, var8));
+            } else if (var16 == -106) {
+               var5.setItem(40, toStack(var15, var8));
+            }
+         }
+      }
+
+      if (var7.get("equipment") instanceof Map var20) {
+         for (int var23 = 0; var23 < EQUIP.length; var23++) {
+            if (var20.get(EQUIP[var23]) instanceof Map var26) {
+               var5.setItem(36 + var23, toStack(var26, var8));
+            }
+         }
+      }
+
+      ItemStack var21 = new ItemStack(Material.GRAY_STAINED_GLASS_PANE);
+      var21.editMeta(var0 -> var0.displayName(MiniMessage.miniMessage().deserialize("<gray>")));
+
+      for (int var24 = 41; var24 < 45; var24++) {
+         var5.setItem(var24, var21);
+      }
+
+      return var5;
    }
 
    private static OfflineInvsee.Holder holder(Inventory var0) {
