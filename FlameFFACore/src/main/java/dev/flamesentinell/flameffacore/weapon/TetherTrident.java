@@ -126,7 +126,7 @@ public final class TetherTrident implements CustomWeapon, Listener {
       double var4 = Math.max(0.0, Math.min(1.0, this.plugin.configs().main().getDouble(this.path() + ".homing-turn", 0.3)));
       ScheduledTask var13 = this.plugin.tasks().entityTimer(var1, task -> {
          boolean var6 = var1 instanceof AbstractArrow var7 && var7.isInBlock();
-         if (var1.isValid() && !var6 && this.inFlight.containsKey(var3) && var2.isOnline() && !var2.isDead() && var2.getWorld().equals(var1.getWorld())) {
+         if (var1.isValid() && !var6 && this.inFlight.containsKey(var3) && var2.isOnline() && !var2.isDead() && Bukkit.isOwnedByCurrentRegion(var2) && var2.getWorld().equals(var1.getWorld())) {
             Vector var12 = var1.getVelocity();
             double var8 = Math.max(var12.length(), 1.5);
             Vector var10 = var2.getLocation().add(0.0, var2.getHeight() * 0.6, 0.0).toVector().subtract(var1.getLocation().toVector());
@@ -211,7 +211,7 @@ public final class TetherTrident implements CustomWeapon, Listener {
       TetherTrident.Tether var2 = this.tethers.get(var1.getUniqueId());
       if (var2 != null) {
          Player var3 = Bukkit.getPlayer(var2.target);
-         if (var3 == null || var3.isDead() || var1.isDead() || !var1.isOnline() || !var1.getWorld().equals(var3.getWorld())) {
+         if (var3 == null || !Bukkit.isOwnedByCurrentRegion(var3) || var3.isDead() || var1.isDead() || !var1.isOnline() || !var1.getWorld().equals(var3.getWorld())) {
             this.release(var1, "gone");
          } else if (!this.inSpawn(var1) && !this.inSpawn(var3)) {
             if (Bukkit.getCurrentTick() >= var2.endsAt) {
@@ -242,7 +242,7 @@ public final class TetherTrident implements CustomWeapon, Listener {
 
          Player var4 = Bukkit.getPlayer(var3.target);
          Location var5 = var1.isOnline() ? var1.getEyeLocation() : null;
-         Location var6 = var4 != null && var1.isOnline() && var4.getWorld().equals(var1.getWorld()) ? var4.getLocation().add(0.0, 1.0, 0.0) : null;
+         Location var6 = var4 != null && var1.isOnline() && Bukkit.isOwnedByCurrentRegion(var4) && var4.getWorld().equals(var1.getWorld()) ? var4.getLocation().add(0.0, 1.0, 0.0) : null;
          this.chain.release(var1, var5, var6, var2.equals("snapped"));
          if (var1.isOnline()) {
             this.plugin.cooldownBar().flash(var1, this.plugin.configs().msg("weapon.tether-" + var2));
@@ -265,7 +265,7 @@ public final class TetherTrident implements CustomWeapon, Listener {
                int var5 = Bukkit.getCurrentTick();
                if (var5 >= var3.nextYank) {
                   Player var6 = Bukkit.getPlayer(var3.target);
-                  if (var6 == null || !this.inSpawn(var6) && !this.inSpawn(var2)) {
+                  if (var6 != null && Bukkit.isOwnedByCurrentRegion(var6) && !this.inSpawn(var6) && !this.inSpawn(var2)) {
                      if (var6 != null) {
                         FileConfiguration var7 = this.plugin.configs().main();
                         var3.nextYank = var5 + Math.max(4, var7.getInt(this.path() + ".yank-cooldown-ticks", 30));

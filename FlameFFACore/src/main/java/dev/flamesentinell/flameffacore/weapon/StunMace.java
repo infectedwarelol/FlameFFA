@@ -42,7 +42,6 @@ public final class StunMace implements CustomWeapon, Listener {
 
    public StunMace(FlameFFACore plugin) {
       this.plugin = plugin;
-      Bukkit.getPluginManager().registerEvents(this, plugin);
    }
 
    @Override

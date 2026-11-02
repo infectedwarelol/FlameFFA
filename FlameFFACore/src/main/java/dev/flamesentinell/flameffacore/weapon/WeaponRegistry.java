@@ -445,7 +445,7 @@ public final class WeaponRegistry implements Listener {
       final CustomWeapon weapon;
       final int started;
       final boolean charges;
-      int lastClick;
+      volatile int lastClick;
 
       Hold(CustomWeapon var1, int var2, boolean var3) {
          this.weapon = var1;

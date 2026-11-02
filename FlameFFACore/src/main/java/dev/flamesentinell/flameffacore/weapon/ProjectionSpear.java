@@ -103,7 +103,7 @@ public final class ProjectionSpear implements CustomWeapon {
                at.setPitch(pitch);
                long delay = Math.round((double)(i - 1) * travel / frames);
                plugin.tasks().regionLater(at, () -> {
-                  if (player.isOnline()) {
+                  if (player.isOnline() && Bukkit.isOwnedByCurrentRegion(player)) {
                      ghosts.add(this.ghost(player, at, held));
                   }
                }, delay);
