@@ -62,7 +62,7 @@ done < <(grep -rhoE '"flame[a-z]*\.[a-z0-9_.-]*[a-z0-9_-]"' "$java_sources" | tr
 echo "==> Checking threading"
 while IFS= read -r line; do
     error "bukkit scheduler: $line"
-done < <(grep -rnE 'getScheduler\(\)|BukkitRunnable|BukkitScheduler|BukkitTask' "$java_sources")
+done < <(grep -rnE 'Bukkit\.getScheduler\(\)|getServer\(\)\.getScheduler\(\)|BukkitRunnable|BukkitScheduler|BukkitTask' "$java_sources")
 
 echo "==> Checking sql"
 while IFS= read -r line; do

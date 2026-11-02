@@ -6,11 +6,10 @@ import dev.flamesentinell.flameffacore.storage.KeyStore;
 import dev.flamesentinell.flameffacore.util.Text;
 import java.security.SecureRandom;
 import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.Set;
 import java.util.UUID;
 import java.util.Map.Entry;
@@ -40,17 +39,17 @@ import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.InventoryHolder;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.persistence.PersistentDataType;
-import org.bukkit.scheduler.BukkitTask;
+import io.papermc.paper.threadedregions.scheduler.ScheduledTask;
 import org.jetbrains.annotations.NotNull;
 
 public final class CrateService implements Listener {
    public static final int EDITOR_SLOTS = 54;
    private final FlameFFACore plugin;
    private final SecureRandom random = new SecureRandom();
-   private final Map<String, ItemStack[]> loot = new LinkedHashMap<>();
-   private final Map<String, String> setBy = new LinkedHashMap<>();
-   private final Map<UUID, CrateService.Roll> rolls = new HashMap<>();
-   private final Set<UUID> busy = new HashSet<>();
+   private final Map<String, ItemStack[]> loot = new ConcurrentHashMap<>();
+   private final Map<String, String> setBy = new ConcurrentHashMap<>();
+   private final Map<UUID, CrateService.Roll> rolls = new ConcurrentHashMap<>();
+   private final Set<UUID> busy = ConcurrentHashMap.newKeySet();
    private static final int[] STEPS = new int[]{2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 4, 4, 4, 6, 7};
    public static final NamespacedKey WEIGHT = new NamespacedKey("flameffa", "crate_weight");
 
@@ -185,14 +184,13 @@ public final class CrateService implements Listener {
          var1.sendMessage(this.plugin.configs().msg("crate.no-loot", "crate", var2.id()));
       } else if (this.freeSlots(var1) < this.requiredSlots()) {
          var1.sendMessage(this.plugin.configs().msg("keys.need-slots", "slots", String.valueOf(this.requiredSlots())));
-      } else if (this.busy.contains(var1.getUniqueId())) {
+      } else if (!this.busy.add(var1.getUniqueId())) {
          var1.sendMessage(Text.parse("<gray>Wait for your crate to finish rolling."));
       } else {
          UUID var3 = var1.getUniqueId();
-         this.busy.add(var3);
          this.plugin.async(() -> {
             KeyStore.Result var4 = this.plugin.keys().spend(var3, var2.id(), 1, "crate_open", var1.getName());
-            this.plugin.sync(() -> {
+            this.plugin.sync(var1, () -> {
                if (var4 != KeyStore.Result.OK) {
                   this.busy.remove(var3);
                   var1.sendMessage(this.plugin.configs().msg("keys.not-enough", "crate", var2.id()));
@@ -310,7 +308,13 @@ public final class CrateService implements Listener {
          if (var2.frame >= STEPS.length) {
             this.finish(var1);
          } else {
-            var2.task = Bukkit.getScheduler().runTaskLater(this.plugin, () -> {
+            Player var4 = Bukkit.getPlayer(var1);
+            if (var4 == null) {
+               this.finish(var1);
+               return;
+            }
+
+            var2.task = this.plugin.tasks().entityLater(var4, () -> {
                CrateService.Roll var2x = this.rolls.get(var1);
                if (var2x != null) {
                   System.arraycopy(var2x.reel, 1, var2x.reel, 0, 8);
@@ -340,7 +344,7 @@ public final class CrateService implements Listener {
          Player var3 = Bukkit.getPlayer(var1);
          if (var3 != null) {
             if (var3.getOpenInventory().getTopInventory() == var2.inv) {
-               Bukkit.getScheduler().runTaskLater(this.plugin, () -> {
+               this.plugin.tasks().entityLater(var3, () -> {
                   if (var3.isOnline() && var3.getOpenInventory().getTopInventory() == var2.inv) {
                      var3.closeInventory();
                   }
@@ -399,7 +403,9 @@ public final class CrateService implements Listener {
 
    public void buy(Player var1, Crate var2, int var3) {
       int var4 = var2.tokenPrice();
-      if (var4 <= 0) {
+      if (var3 < 1) {
+         return;
+      } else if (var4 <= 0 || (long)var4 * var3 > Integer.MAX_VALUE) {
          var1.sendMessage(this.plugin.configs().msg("crate.not-for-sale", "crate", var2.id()));
       } else {
          int var5 = var4 * var3;
@@ -419,6 +425,7 @@ public final class CrateService implements Listener {
                         this.plugin.keys().grant(var8, var2.id(), var3, "token_purchase", var1.getName(), null);
                         this.plugin
                            .sync(
+                              var1,
                               () -> var1.sendMessage(
                                  this.plugin.configs().msg("crate.bought", "amount", String.valueOf(var3), "crate", var2.id(), "cost", String.valueOf(var5))
                               )
@@ -461,7 +468,7 @@ public final class CrateService implements Listener {
                UUID var6 = var3.getUniqueId();
                this.plugin.async(() -> {
                   KeyStore.Result var4x = this.plugin.keys().grant(var6, var5.id(), 1, "voucher", var3.getName(), null);
-                  this.plugin.sync(() -> {
+                  this.plugin.sync(var3, () -> {
                      if (var4x != KeyStore.Result.OK) {
                         var3.getInventory().addItem(new ItemStack[]{this.plugin.items().mintVoucher(var5.id())});
                         var3.sendMessage(this.plugin.configs().msg("voucher.failed"));
@@ -547,7 +554,7 @@ public final class CrateService implements Listener {
       Crate crate;
       ItemStack won;
       Inventory inv;
-      BukkitTask task;
+      ScheduledTask task;
       ItemStack[] reel = new ItemStack[9];
       int frame;
    }

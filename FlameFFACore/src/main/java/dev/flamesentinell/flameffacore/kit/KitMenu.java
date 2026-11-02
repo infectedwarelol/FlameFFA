@@ -6,9 +6,9 @@ import dev.flamesentinell.flameffacore.item.ItemKeys;
 import dev.flamesentinell.flameffacore.rank.Rank;
 import dev.flamesentinell.flameffacore.util.Text;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.UUID;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.TextDecoration;
@@ -24,7 +24,7 @@ import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.InventoryHolder;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.persistence.PersistentDataType;
-import org.bukkit.scheduler.BukkitTask;
+import io.papermc.paper.threadedregions.scheduler.ScheduledTask;
 import org.jetbrains.annotations.NotNull;
 
 public final class KitMenu implements Listener {
@@ -33,8 +33,8 @@ public final class KitMenu implements Listener {
    private static final String EQUIP = "equip:";
    private static final int ROWS = 5;
    private final FlameFFACore plugin;
-   private final Map<UUID, KitMenu.Holder> open = new HashMap<>();
-   private BukkitTask ticker;
+   private final Map<UUID, KitMenu.Holder> open = new ConcurrentHashMap<>();
+   private final Map<UUID, ScheduledTask> tickers = new ConcurrentHashMap<>();
 
    public KitMenu(FlameFFACore var1) {
       this.plugin = var1;
@@ -47,7 +47,7 @@ public final class KitMenu implements Listener {
       this.paint(var1, var3);
       var1.openInventory(var3);
       this.open.put(var1.getUniqueId(), var2);
-      this.tick();
+      this.tick(var1);
    }
 
    private void paint(Player var1, Inventory var2) {
@@ -252,32 +252,37 @@ public final class KitMenu implements Listener {
       }
    }
 
-   private void tick() {
-      if (this.ticker == null) {
-         this.ticker = Bukkit.getScheduler().runTaskTimer(this.plugin, () -> {
-            this.open.entrySet().removeIf(var1 -> {
-               Player var2 = Bukkit.getPlayer(var1.getKey());
-               if (var2 != null && var2.getOpenInventory().getTopInventory() == var1.getValue().inventory) {
-                  this.paint(var2, var1.getValue().inventory);
-                  return false;
-               } else {
-                  return true;
+   private void tick(Player player) {
+      UUID uuid = player.getUniqueId();
+      if (!this.tickers.containsKey(uuid)) {
+         ScheduledTask ticker = this.plugin.tasks().entityTimer(player, task -> {
+            KitMenu.Holder holder = this.open.get(uuid);
+            if (holder != null && player.isOnline() && player.getOpenInventory().getTopInventory() == holder.inventory) {
+               this.paint(player, holder.inventory);
+            } else {
+               if (holder != null) {
+                  this.open.remove(uuid, holder);
                }
-            });
-            if (this.open.isEmpty()) {
-               this.ticker.cancel();
-               this.ticker = null;
+
+               this.tickers.remove(uuid);
+               task.cancel();
             }
+         }, () -> {
+            this.tickers.remove(uuid);
+            this.open.remove(uuid);
          }, 20L, 20L);
+         if (ticker != null) {
+            this.tickers.put(uuid, ticker);
+         }
       }
    }
 
    public void shutdown() {
-      if (this.ticker != null) {
-         this.ticker.cancel();
-         this.ticker = null;
+      for (ScheduledTask ticker : this.tickers.values()) {
+         ticker.cancel();
       }
 
+      this.tickers.clear();
       this.open.clear();
    }
 

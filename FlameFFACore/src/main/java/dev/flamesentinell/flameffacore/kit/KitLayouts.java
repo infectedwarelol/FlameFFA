@@ -264,7 +264,7 @@ public final class KitLayouts implements Listener {
 
          var12.clear();
          this.save(var3.getUniqueId(), var2.kit, var13);
-         Bukkit.getScheduler().runTask(this.plugin, () -> this.purge(var3));
+         this.plugin.tasks().entity(var3, () -> this.purge(var3));
          say(var3, "<green>Kit layout for <yellow>" + var2.kit + "</yellow> saved. <gray>It applies the next time you take the kit.");
       }
    }

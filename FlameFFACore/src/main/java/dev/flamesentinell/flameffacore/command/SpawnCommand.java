@@ -3,8 +3,8 @@ package dev.flamesentinell.flameffacore.command;
 import dev.flamesentinell.flameffacore.FlameFFACore;
 import io.papermc.paper.command.brigadier.BasicCommand;
 import io.papermc.paper.command.brigadier.CommandSourceStack;
-import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.UUID;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
@@ -14,12 +14,13 @@ import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.entity.EntityDamageEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
-import org.bukkit.scheduler.BukkitTask;
+import io.papermc.paper.threadedregions.scheduler.ScheduledTask;
+import dev.flamesentinell.flameffacore.util.Tasks;
 import org.jetbrains.annotations.NotNull;
 
 public final class SpawnCommand implements BasicCommand, Listener {
    private final FlameFFACore plugin;
-   private final Map<UUID, BukkitTask> pending = new HashMap<>();
+   private final Map<UUID, ScheduledTask> pending = new ConcurrentHashMap<>();
 
    public SpawnCommand(FlameFFACore plugin) {
       this.plugin = plugin;
@@ -38,12 +39,15 @@ public final class SpawnCommand implements BasicCommand, Listener {
             int warmup = this.plugin.configs().main().getInt("spawn.warmup-seconds", 3);
             if (warmup > 0 && !this.plugin.staff().isRoot(player)) {
                player.sendMessage(this.plugin.configs().msg("spawn.warmup", "seconds", String.valueOf(warmup)));
-               this.pending.put(var6, Bukkit.getScheduler().runTaskLater(this.plugin, () -> {
+               ScheduledTask warmupTask = this.plugin.tasks().entityLater(player, () -> {
                   this.pending.remove(var6);
                   if (player.isOnline() && !player.isDead() && !this.plugin.arena().inCombat(player)) {
                      this.go(player);
                   }
-               }, warmup * 20L));
+               }, warmup * 20L);
+               if (warmupTask != null) {
+                  this.pending.put(var6, warmupTask);
+               }
             } else {
                this.go(player);
             }
@@ -56,7 +60,7 @@ public final class SpawnCommand implements BasicCommand, Listener {
    private void go(Player player) {
       Location spawn = this.plugin.arena().spawn();
       player.setFallDistance(0.0F);
-      player.teleport(spawn);
+      Tasks.move(player, spawn);
       player.sendMessage(this.plugin.configs().msg("spawn.arrived"));
    }
 
@@ -66,7 +70,7 @@ public final class SpawnCommand implements BasicCommand, Listener {
    )
    public void onDamage(EntityDamageEvent event) {
       if (event.getEntity() instanceof Player player) {
-         BukkitTask task = this.pending.remove(player.getUniqueId());
+         ScheduledTask task = this.pending.remove(player.getUniqueId());
          if (task != null) {
             task.cancel();
             player.sendMessage(this.plugin.configs().msg("spawn.cancelled"));
@@ -76,7 +80,7 @@ public final class SpawnCommand implements BasicCommand, Listener {
 
    @EventHandler
    public void onQuit(PlayerQuitEvent event) {
-      BukkitTask task = this.pending.remove(event.getPlayer().getUniqueId());
+      ScheduledTask task = this.pending.remove(event.getPlayer().getUniqueId());
       if (task != null) {
          task.cancel();
       }

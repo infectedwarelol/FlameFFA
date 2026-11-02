@@ -141,7 +141,7 @@ public final class TebexBridge implements Listener {
          this.plugin.async(() -> {
             for (PendingStore.Pending pending : this.plugin.pending().open(player.getUniqueId())) {
                if (this.plugin.pending().markDelivered(pending.id())) {
-                  this.plugin.sync(() -> player.sendMessage(this.plugin.configs().msg("tebex.delivered", "what", pending.payload())));
+                  this.plugin.sync(player, () -> player.sendMessage(this.plugin.configs().msg("tebex.delivered", "what", pending.payload())));
                }
             }
          });
