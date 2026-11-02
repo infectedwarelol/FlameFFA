@@ -1,0 +1,26 @@
+# FlameWindBrake  same rules and defaults as the windchargereset fabric mod 2.0
+# a wind charge thrown while falling  looking down  and high above the ground is deleted
+# and the thrower loses some speed  mostly downward  with no fall damage
+enabled: true
+# only in the air and only while falling at least this fast  blocks per tick  negative is down
+require-airborne: true
+require-falling: true
+min-fall-velocity: -0.25
+# pitch in degrees  90 is straight down
+min-pitch-down: 55.0
+# no solid block may be within this many blocks below the feet  0 turns the check off
+min-ground-distance: 10.0
+# per player
+cooldown-ms: 400
+# the throw takes some speed off  mostly the fall
+# share of fall speed kept  0 is a dead stop  1 changes nothing
+vertical-multiplier: 0.3
+# added to the vertical speed after the multiplier  positive is up
+vertical-add: 0.0
+# share of horizontal speed kept
+horizontal-multiplier: 0.8
+# extra ticks the new speed is forced for  0 is a single nudge
+hold-ticks: 0
+sound-enabled: true
+sound-volume: 1.0
+sound-pitch: 0.67

@@ -1,0 +1,13 @@
+name: FlameWindBrake
+version: 1.2.0
+main: dev.flamesentinell.windbrake.WindBrake
+api-version: '1.21.11'
+author: flamesentinell
+description: A wind charge thrown down while falling high up brakes the fall like the windchargereset mod
+commands:
+  windbrake:
+    description: reload the wind brake config
+    permission: windbrake.admin
+permissions:
+  windbrake.admin:
+    default: op
