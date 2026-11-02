@@ -3,6 +3,7 @@ package dev.flamesentinell.flameffacore.crate;
 import dev.flamesentinell.flameffacore.FlameFFACore;
 import dev.flamesentinell.flameffacore.storage.CrateBlockStore;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
@@ -16,8 +17,8 @@ import org.bukkit.configuration.ConfigurationSection;
 public final class CrateRegistry {
    public static final Material CRATE_BLOCK = Material.CHEST;
    private final FlameFFACore plugin;
-   private final Map<String, Crate> crates = new LinkedHashMap<>();
-   private final Map<String, String> placements = new LinkedHashMap<>();
+   private volatile Map<String, Crate> crates = Collections.emptyMap();
+   private volatile Map<String, String> placements = Collections.emptyMap();
 
    public CrateRegistry(FlameFFACore plugin) {
       this.plugin = plugin;
@@ -28,7 +29,7 @@ public final class CrateRegistry {
    }
 
    public void load() {
-      this.crates.clear();
+      Map<String, Crate> loaded = new LinkedHashMap<>();
       ConfigurationSection root = this.plugin.configs().crates().getConfigurationSection("crates");
       if (root == null) {
          this.plugin.getSLF4JLogger().warn("crates.yml has no crates section");
@@ -38,13 +39,15 @@ public final class CrateRegistry {
             if (s != null) {
                String lower = id.toLowerCase(Locale.ROOT);
                Material candle = Material.matchMaterial(s.getString("voucher", "WHITE_CANDLE"));
-               this.crates
+               loaded
                   .put(lower, new Crate(lower, s.getString("display", id), s.getInt("token-price", 0), candle == null ? Material.WHITE_CANDLE : candle));
             }
          }
 
-         this.plugin.getSLF4JLogger().info("loaded {} crate tiers", this.crates.size());
+         this.plugin.getSLF4JLogger().info("loaded {} crate tiers", loaded.size());
       }
+
+      this.crates = Collections.unmodifiableMap(loaded);
    }
 
    public Crate get(String id) {
@@ -56,15 +59,33 @@ public final class CrateRegistry {
    }
 
    public void loadPlacements() {
-      this.placements.clear();
+      Map<String, String> loaded = new LinkedHashMap<>();
 
       for (CrateBlockStore.Placement p : this.plugin.crateBlocks().loadAll()) {
          if (this.get(p.crateId()) != null) {
-            this.placements.put(key(p.location()), p.crateId());
+            loaded.put(key(p.location()), p.crateId());
          }
       }
 
-      this.plugin.getSLF4JLogger().info("loaded {} placed crates", this.placements.size());
+      this.placements = Collections.unmodifiableMap(loaded);
+      this.plugin.getSLF4JLogger().info("loaded {} placed crates", loaded.size());
+   }
+
+   private synchronized void putPlacement(String key, String crateId) {
+      Map<String, String> next = new LinkedHashMap<>(this.placements);
+      next.put(key, crateId);
+      this.placements = Collections.unmodifiableMap(next);
+   }
+
+   private synchronized boolean removePlacement(String key) {
+      if (!this.placements.containsKey(key)) {
+         return false;
+      } else {
+         Map<String, String> next = new LinkedHashMap<>(this.placements);
+         next.remove(key);
+         this.placements = Collections.unmodifiableMap(next);
+         return true;
+      }
    }
 
    public boolean place(String crateId, Location loc, String placedBy) {
@@ -73,7 +94,7 @@ public final class CrateRegistry {
          if (!this.plugin.crateBlocks().add(crate.id(), loc, placedBy)) {
             return false;
          } else {
-            this.placements.put(key(loc), crate.id());
+            this.putPlacement(key(loc), crate.id());
             this.materialise(loc);
             return true;
          }
@@ -83,9 +104,9 @@ public final class CrateRegistry {
    }
 
    public boolean unplace(Location loc) {
-      if (loc.getWorld() != null && this.placements.remove(key(loc)) != null) {
+      if (loc.getWorld() != null && this.removePlacement(key(loc))) {
          this.plugin.crateBlocks().remove(loc);
-         loc.getBlock().setType(Material.AIR);
+         this.plugin.tasks().runAt(loc, () -> loc.getBlock().setType(Material.AIR));
          return true;
       } else {
          return false;
@@ -93,8 +114,12 @@ public final class CrateRegistry {
    }
 
    public void materialise(Location loc) {
-      if (loc.getWorld() != null && loc.getBlock().getType() != CRATE_BLOCK) {
-         loc.getBlock().setType(CRATE_BLOCK, false);
+      if (loc.getWorld() != null) {
+         this.plugin.tasks().runAt(loc, () -> {
+            if (loc.getBlock().getType() != CRATE_BLOCK) {
+               loc.getBlock().setType(CRATE_BLOCK, false);
+            }
+         });
       }
    }
 

@@ -29,7 +29,6 @@ import org.bukkit.event.entity.PlayerDeathEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.event.player.PlayerTeleportEvent.TeleportCause;
 import org.bukkit.inventory.ItemStack;
-import io.papermc.paper.threadedregions.scheduler.ScheduledTask;
 
 public final class PhoenixMace implements CustomWeapon, Listener {
    public static final String ID = "phoenix-mace";
@@ -95,11 +94,10 @@ public final class PhoenixMace implements CustomWeapon, Listener {
    }
 
    private void mark(FlameFFACore plugin, Player player, PhoenixMace.Anchor anchor, int ticks) {
-      ScheduledTask[] handle = new ScheduledTask[1];
       int[] left = new int[]{ticks};
       Location c = anchor.at.clone().add(0.0, 0.1, 0.0);
       World world = c.getWorld();
-      handle[0] = plugin.tasks().regionTimer(c, task -> {
+      plugin.tasks().regionTimer(c, task -> {
          left[0] -= 2;
          if (left[0] >= 0 && this.anchors.get(player.getUniqueId()) == anchor) {
             double angle = left[0] * 0.25;
@@ -175,9 +173,8 @@ public final class PhoenixMace implements CustomWeapon, Listener {
    }
 
    private void wings(FlameFFACore plugin, Player player, int ticks) {
-      ScheduledTask[] handle = new ScheduledTask[1];
       int[] left = new int[]{ticks};
-      handle[0] = plugin.tasks().entityTimer(player, task -> {
+      plugin.tasks().entityTimer(player, task -> {
          if (--left[0] >= 0 && player.isOnline()) {
             Location at = player.getLocation().add(0.0, 1.0, 0.0);
             player.getWorld().spawnParticle(Particle.DUST, at, 4, 0.5, 0.5, 0.5, 0.0, GOLD);

@@ -1,10 +1,10 @@
 package dev.flamesentinell.flameffacore.ui;
 
 import dev.flamesentinell.flameffacore.FlameFFACore;
-import java.util.ArrayDeque;
-import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import dev.flamesentinell.flameffacore.util.Tasks;
 import java.util.UUID;
 import java.util.Map.Entry;
 import java.util.concurrent.ThreadLocalRandom;
@@ -32,9 +32,8 @@ import org.joml.Vector3f;
 public final class CombatHud implements Listener {
    private static final String TAG = "flameffacore_damage";
    private final FlameFFACore plugin;
-   private final Map<UUID, BossBar> bars = new HashMap<>();
-   private final ArrayDeque<Object[]> fading = new ArrayDeque<>();
-   private final Map<String, Component> numberText = new HashMap<>();
+   private final Map<UUID, BossBar> bars = new ConcurrentHashMap<>();
+   private final Map<String, Component> numberText = new ConcurrentHashMap<>();
    private boolean barEnabled = true;
    private boolean numbersEnabled = true;
    private int numberTicks = 16;
@@ -145,23 +144,19 @@ public final class CombatHud implements Listener {
          );
       viewer.showEntity(this.plugin, display);
       Location end = spot.clone().add(0.0, 0.06 * this.numberTicks, 0.0);
-      Bukkit.getScheduler().runTask(this.plugin, () -> {
+      this.plugin.tasks().entity(display, () -> {
          if (display.isValid()) {
-            display.teleport(end);
+            Tasks.move(display, end);
          }
       });
-      this.fading.add(new Object[]{display, Bukkit.getCurrentTick() + this.numberTicks});
-   }
-
-   public void sweepNumbers() {
-      int now = Bukkit.getCurrentTick();
-
-      while (!this.fading.isEmpty() && (Integer)this.fading.peek()[1] <= now) {
-         ((TextDisplay)this.fading.poll()[0]).remove();
-      }
+      this.plugin.tasks().entityLater(display, display::remove, this.numberTicks);
    }
 
    public int sweepLeftovers() {
+      if (Tasks.FOLIA) {
+         return 0;
+      }
+
       int gone = 0;
 
       for (World world : Bukkit.getWorlds()) {

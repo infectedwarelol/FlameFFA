@@ -42,10 +42,14 @@ import org.bukkit.entity.Player;
 import org.bukkit.entity.TextDisplay;
 import org.bukkit.entity.Display.Billboard;
 import org.bukkit.event.EventHandler;
+import org.bukkit.event.entity.ProjectileLaunchEvent;
+import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
-import org.bukkit.scheduler.BukkitTask;
+import io.papermc.paper.threadedregions.scheduler.ScheduledTask;
+import dev.flamesentinell.flameffacore.util.Tasks;
+import java.util.concurrent.CopyOnWriteArrayList;
 import org.bukkit.scoreboard.Criteria;
 import org.bukkit.scoreboard.DisplaySlot;
 import org.bukkit.scoreboard.Objective;
@@ -65,9 +69,11 @@ public final class HudService implements Listener {
    private final Map<UUID, Integer> shownHealth = new ConcurrentHashMap<>();
    private static final String HP_OBJECTIVE = "flamehp";
    private static final String BOT_TEAM = "smbot_bot";
-   private final List<TextDisplay> crateLabels = new ArrayList<>();
-   private final Set<Long> crateChunks = new HashSet<>();
-   private BukkitTask task;
+   private final List<TextDisplay> crateLabels = new CopyOnWriteArrayList<>();
+   private volatile Set<Long> crateChunks = Set.of();
+   private final Map<UUID, ScheduledTask> tickers = new ConcurrentHashMap<>();
+   private final Map<UUID, int[]> playerTicks = new ConcurrentHashMap<>();
+   private ScheduledTask task;
    private int ticks;
 
    public HudService(FlameFFACore var1) {
@@ -79,12 +85,29 @@ public final class HudService implements Listener {
       this.spawnCrateLabels();
 
       for (Player var2 : Bukkit.getOnlinePlayers()) {
-         if (!Bots.is(var2)) {
-            this.attach(var2);
-         }
+         this.plugin.tasks().runOn(var2, () -> {
+            if (!Bots.is(var2)) {
+               this.attach(var2);
+            }
+
+            this.startTicker(var2);
+         });
       }
 
-      this.task = Bukkit.getScheduler().runTaskTimer(this.plugin, this::tick, 5L, 5L);
+      this.task = this.plugin.tasks().globalTimer(task -> this.tick(), 5L, 5L);
+   }
+
+   private void startTicker(Player player) {
+      UUID uuid = player.getUniqueId();
+      Tasks.cancel(this.tickers.remove(uuid));
+      this.playerTicks.put(uuid, new int[1]);
+      ScheduledTask ticker = this.plugin.tasks().entityTimer(player, task -> this.tick(player), () -> {
+         this.tickers.remove(uuid);
+         this.playerTicks.remove(uuid);
+      }, 5L, 5L);
+      if (ticker != null) {
+         this.tickers.put(uuid, ticker);
+      }
    }
 
    public void shutdown() {
@@ -92,6 +115,13 @@ public final class HudService implements Listener {
          this.task.cancel();
          this.task = null;
       }
+
+      for (ScheduledTask ticker : this.tickers.values()) {
+         ticker.cancel();
+      }
+
+      this.tickers.clear();
+      this.playerTicks.clear();
 
       for (HudService.Session var2 : this.sessions.values()) {
          this.clearKeyLine(var2);
@@ -206,8 +236,14 @@ public final class HudService implements Listener {
    }
 
    private static boolean botTagged(Player var0) {
-      Team var1 = Bukkit.getScoreboardManager().getMainScoreboard().getTeam("smbot_bot");
-      return Bots.is(var0) || var1 != null && var1.hasEntry(var0.getName());
+      if (Bots.is(var0)) {
+         return true;
+      } else if (Tasks.FOLIA) {
+         return false;
+      } else {
+         Team var1 = Bukkit.getScoreboardManager().getMainScoreboard().getTeam("smbot_bot");
+         return var1 != null && var1.hasEntry(var0.getName());
+      }
    }
 
    private Component tagPrefix(Player var1) {
@@ -267,6 +303,10 @@ public final class HudService implements Listener {
    }
 
    public void refreshTag(Player var1, boolean var2) {
+      if (Tasks.FOLIA) {
+         return;
+      }
+
       String var3 = this.tagKey(var1);
       Component var4 = this.tagPrefix(var1);
       String var5 = var3 + "|" + Text.plain(var4) + "|" + var4.hashCode();
@@ -282,6 +322,10 @@ public final class HudService implements Listener {
    }
 
    private void sweepWindCharges() {
+      if (Tasks.FOLIA) {
+         return;
+      }
+
       int var1 = this.plugin.configs().main().getInt("sweep.wind-charge-seconds", 10) * 20;
       if (var1 > 0) {
          for (World var3 : Bukkit.getWorlds()) {
@@ -294,8 +338,8 @@ public final class HudService implements Listener {
       }
    }
 
-   private void pushHealth() {
-      for (Player var2 : Bukkit.getOnlinePlayers()) {
+   private void pushHealth(Player var2) {
+      if (!Tasks.FOLIA) {
          int var3 = (int)Math.ceil(var2.getHealth());
          Integer var4 = this.shownHealth.put(var2.getUniqueId(), var3);
          if (var4 == null || var4 != var3) {
@@ -312,6 +356,9 @@ public final class HudService implements Listener {
    private void dropTag(Player var1) {
       this.tagKeys.remove(var1.getUniqueId());
       this.shownHealth.remove(var1.getUniqueId());
+      if (Tasks.FOLIA) {
+         return;
+      }
 
       for (HudService.Session var3 : this.sessions.values()) {
          if (var3.board != null) {
@@ -430,19 +477,21 @@ public final class HudService implements Listener {
          Location var4 = var2.location();
          if (var3 != null && var4 != null && var4.getWorld() != null) {
             Location var5 = var4.clone().add(0.5, 1.55, 0.5);
-            TextDisplay var6 = (TextDisplay)var5.getWorld().spawn(var5, TextDisplay.class, var2x -> {
-               var2x.text(this.hud(Text.parse(var3.display())));
-               var2x.setBillboard(Billboard.CENTER);
-               var2x.setSeeThrough(false);
-               var2x.setViewRange(0.4F);
-               var2x.setPersistent(false);
-               var2x.addScoreboardTag("flameffacore_crate");
+            this.plugin.tasks().runAt(var5, () -> {
+               TextDisplay var6 = (TextDisplay)var5.getWorld().spawn(var5, TextDisplay.class, var2x -> {
+                  var2x.text(this.hud(Text.parse(var3.display())));
+                  var2x.setBillboard(Billboard.CENTER);
+                  var2x.setSeeThrough(false);
+                  var2x.setViewRange(0.4F);
+                  var2x.setPersistent(false);
+                  var2x.addScoreboardTag("flameffacore_crate");
+               });
+               this.crateLabels.add(var6);
             });
-            this.crateLabels.add(var6);
          }
       }
 
-      this.crateChunks.clear();
+      Set<Long> chunks = new HashSet<>();
 
       for (Location var8 : this.plugin.crateRegistry().locations()) {
          int var9 = var8.getBlockX() >> 4;
@@ -450,38 +499,46 @@ public final class HudService implements Listener {
 
          for (int var11 = -1; var11 <= 1; var11++) {
             for (int var12 = -1; var12 <= 1; var12++) {
-               this.crateChunks.add(Chunk.getChunkKey(var9 + var11, var10 + var12));
+               chunks.add(Chunk.getChunkKey(var9 + var11, var10 + var12));
             }
          }
       }
+
+      this.crateChunks = Set.copyOf(chunks);
 
       this.plugin.getSLF4JLogger().info("spawned {} crate labels", this.crateLabels.size());
    }
 
    private void despawnCrateLabels() {
       for (TextDisplay var2 : this.crateLabels) {
-         if (var2.isValid()) {
-            var2.remove();
-         }
+         this.plugin.tasks().runOn(var2, () -> {
+            if (var2.isValid()) {
+               var2.remove();
+            }
+         });
       }
 
       this.crateLabels.clear();
 
       for (Location var7 : this.plugin.crateRegistry().locations()) {
          if (var7.getWorld() != null) {
-            for (Entity var4 : var7.getWorld().getNearbyEntities(var7.clone().add(0.5, 1.5, 0.5), 3.0, 3.0, 3.0)) {
-               if (var4 instanceof TextDisplay var5 && var5.getScoreboardTags().contains("flameffacore_crate")) {
-                  var5.remove();
+            Location var8 = var7.clone().add(0.5, 1.5, 0.5);
+            this.plugin.tasks().runAt(var8, () -> {
+               for (Entity var4 : var8.getWorld().getNearbyEntities(var8, 3.0, 3.0, 3.0)) {
+                  if (var4 instanceof TextDisplay var5 && var5.getScoreboardTags().contains("flameffacore_crate")) {
+                     var5.remove();
+                  }
                }
-            }
+            });
          }
       }
    }
 
    @EventHandler
    public void onJoin(PlayerJoinEvent var1) {
+      this.startTicker(var1.getPlayer());
       if (Bots.is(var1.getPlayer())) {
-         Bukkit.getScheduler().runTask(this.plugin, () -> {
+         this.plugin.tasks().entity(var1.getPlayer(), () -> {
             if (var1.getPlayer().isOnline()) {
                this.refreshTag(var1.getPlayer(), true);
             }
@@ -492,8 +549,9 @@ public final class HudService implements Listener {
          Player var2 = var1.getPlayer();
 
          for (HudService.Session var4 : this.sessions.values()) {
-            if (var4.keyLine != null && var4.keyLine.isValid()) {
-               var2.hideEntity(this.plugin, var4.keyLine);
+            TextDisplay var5 = var4.keyLine;
+            if (var5 != null) {
+               var2.hideEntity(this.plugin, var5);
             }
          }
 
@@ -501,8 +559,27 @@ public final class HudService implements Listener {
       }
    }
 
+   @EventHandler(
+      priority = EventPriority.MONITOR,
+      ignoreCancelled = true
+   )
+   public void onWindCharge(ProjectileLaunchEvent event) {
+      if (Tasks.FOLIA && event.getEntity() instanceof AbstractWindCharge charge) {
+         int limit = this.plugin.configs().main().getInt("sweep.wind-charge-seconds", 10) * 20;
+         if (limit > 0) {
+            this.plugin.tasks().entityLater(charge, () -> {
+               if (charge.isValid()) {
+                  charge.remove();
+               }
+            }, limit + 1L);
+         }
+      }
+   }
+
    @EventHandler
    public void onQuit(PlayerQuitEvent var1) {
+      Tasks.cancel(this.tickers.remove(var1.getPlayer().getUniqueId()));
+      this.playerTicks.remove(var1.getPlayer().getUniqueId());
       this.dropTag(var1.getPlayer());
       if (!Bots.is(var1.getPlayer())) {
          this.flush(var1.getPlayer().getUniqueId(), true);
@@ -512,6 +589,27 @@ public final class HudService implements Listener {
    private void attach(Player var1) {
       HudService.Session var2 = new HudService.Session();
       this.sessions.put(var1.getUniqueId(), var2);
+      if (!Tasks.FOLIA) {
+         this.attachBoard(var1, var2);
+      }
+
+      UUID var7 = var1.getUniqueId();
+      this.plugin.async(() -> {
+         PlayerStore.Stats var3x = this.plugin.players().stats(var7);
+         this.plugin.sync(var1, () -> {
+            HudService.Session var4x = this.sessions.get(var7);
+            if (var4x != null) {
+               var4x.kills = var3x.kills();
+               var4x.deaths = var3x.deaths();
+               var4x.bestStreak = var3x.bestStreak();
+               var4x.storedPlaytimeMs = var3x.playtimeMs();
+               this.render(var1, var4x, true);
+            }
+         });
+      });
+   }
+
+   private void attachBoard(Player var1, HudService.Session var2) {
       Scoreboard var3 = Bukkit.getScoreboardManager().getNewScoreboard();
       Objective var4 = var3.registerNewObjective("flameffa", Criteria.DUMMY, this.hud(this.plugin.configs().msg("hud.title")));
       var4.setDisplaySlot(DisplaySlot.SIDEBAR);
@@ -526,20 +624,6 @@ public final class HudService implements Listener {
       this.setupBoardTags(var3);
       var1.setScoreboard(var3);
       this.refreshTag(var1, true);
-      UUID var7 = var1.getUniqueId();
-      this.plugin.async(() -> {
-         PlayerStore.Stats var3x = this.plugin.players().stats(var7);
-         this.plugin.sync(() -> {
-            HudService.Session var4x = this.sessions.get(var7);
-            if (var4x != null) {
-               var4x.kills = var3x.kills();
-               var4x.deaths = var3x.deaths();
-               var4x.bestStreak = var3x.bestStreak();
-               var4x.storedPlaytimeMs = var3x.playtimeMs();
-               this.render(var1, var4x, true);
-            }
-         });
-      });
    }
 
    private void flush(UUID var1, boolean var2) {
@@ -572,59 +656,62 @@ public final class HudService implements Listener {
 
    private void tick() {
       this.ticks++;
-      boolean var1 = this.ticks % 12 == 0;
-      boolean var2 = this.ticks % 4 == 0;
-      if (var1) {
+      if (this.ticks % 12 == 0) {
          this.relabelIfLost();
-
-         for (Player var4 : Bukkit.getOnlinePlayers()) {
-            this.refreshTag(var4, false);
-         }
       }
 
-      this.pushHealth();
-      if (var2) {
+      if (this.ticks % 4 == 0) {
          this.sweepWindCharges();
       }
 
       this.plugin.weapons().tick();
       this.plugin.antiCheat().tick();
-      this.plugin.combatHud().sweepNumbers();
+   }
 
-      for (Player var8 : Bukkit.getOnlinePlayers()) {
-         this.plugin.weapons().tick(var8);
-         if (!Bots.is(var8)) {
-            boolean var5 = Bots.sparring(var8);
-            if (!var5) {
-               this.plugin.safezone().tick(var8);
+   private void tick(Player player) {
+      int[] counter = this.playerTicks.get(player.getUniqueId());
+      if (counter != null && player.isOnline()) {
+         int now = ++counter[0];
+         boolean slow = now % 12 == 0;
+         boolean mid = now % 4 == 0;
+         if (slow) {
+            this.refreshTag(player, false);
+         }
+
+         this.pushHealth(player);
+         this.plugin.weapons().tick(player);
+         if (!Bots.is(player)) {
+            boolean sparring = Bots.sparring(player);
+            if (!sparring) {
+               this.plugin.safezone().tick(player);
             }
 
-            this.plugin.cooldownBar().tick(var8);
-            if (var2) {
-               if (!var5) {
-                  this.plugin.afk().tick(var8);
+            this.plugin.cooldownBar().tick(player);
+            if (mid) {
+               if (!sparring) {
+                  this.plugin.afk().tick(player);
                }
 
-               this.plugin.combatHud().tick(var8);
-               this.plugin.cosmetics().tick(var8);
+               this.plugin.combatHud().tick(player);
+               this.plugin.cosmetics().tick(player);
             }
 
-            HudService.Session var6 = this.sessions.get(var8.getUniqueId());
-            if (var6 != null) {
-               if (var1) {
-                  this.render(var8, var6, false);
-                  this.listName(var8);
-                  this.tabList(var8);
+            HudService.Session session = this.sessions.get(player.getUniqueId());
+            if (session != null) {
+               if (slow) {
+                  this.render(player, session, false);
+                  this.listName(player);
+                  this.tabList(player);
                }
 
-               this.crateLook(var8, var6);
+               this.crateLook(player, session);
             }
          }
       }
    }
 
    private void relabelIfLost() {
-      if (!Bukkit.getOnlinePlayers().isEmpty() && !this.crateLabels.isEmpty()) {
+      if (!Tasks.FOLIA && !Bukkit.getOnlinePlayers().isEmpty() && !this.crateLabels.isEmpty()) {
          for (TextDisplay var2 : this.crateLabels) {
             if (!var2.isValid()) {
                this.plugin.crateRegistry().materialiseAll();
@@ -636,6 +723,10 @@ public final class HudService implements Listener {
    }
 
    private void render(Player var1, HudService.Session var2, boolean var3) {
+      if (var2.board == null) {
+         return;
+      }
+
       List var4 = this.lines(var1, var2);
       int var5 = Math.min(var4.size(), ENTRIES.length);
 
