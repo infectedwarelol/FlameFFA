@@ -50,3 +50,6 @@ permissions:
   flamedaily.admin:
     description: /flamedaily reload and reset
     default: op
+  windbrake.admin:
+    description: /windbrake reload
+    default: op

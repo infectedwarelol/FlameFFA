@@ -53,6 +53,7 @@ import dev.flamesentinell.flameffacore.util.Cooldowns;
 import dev.flamesentinell.flameffacore.util.Tasks;
 import dev.flamesentinell.flameffacore.module.ModuleManager;
 import dev.flamesentinell.flameffacore.daily.DailyModule;
+import dev.flamesentinell.flameffacore.windbrake.WindBrakeModule;
 import dev.flamesentinell.flameffacore.villager.VillagerService;
 import dev.flamesentinell.flameffacore.weapon.AegisShield;
 import dev.flamesentinell.flameffacore.weapon.StunMace;
@@ -203,6 +204,7 @@ public final class FlameFFACore extends JavaPlugin {
       Bukkit.getPluginManager().registerEvents(this.packHost, this);
       this.modules = new ModuleManager(this);
       this.modules.add(new DailyModule(this));
+      this.modules.add(new WindBrakeModule(this));
       this.modules.enableAll();
       this.registerCommands();
       this.tasks.global(() -> {
