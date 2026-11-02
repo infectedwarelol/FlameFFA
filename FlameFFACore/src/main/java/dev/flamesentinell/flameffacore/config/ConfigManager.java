@@ -166,7 +166,6 @@ public final class ConfigManager {
 
    public void load() {
       this.plugin.getDataFolder().mkdirs();
-      this.loaded.clear();
 
       for (String name : FILES) {
          File file = new File(this.plugin.getDataFolder(), name);

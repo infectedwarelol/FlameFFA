@@ -51,6 +51,7 @@ import dev.flamesentinell.flameffacore.ui.HudService;
 import dev.flamesentinell.flameffacore.ui.LeaderboardService;
 import dev.flamesentinell.flameffacore.util.Cooldowns;
 import dev.flamesentinell.flameffacore.util.Tasks;
+import dev.flamesentinell.flameffacore.module.ModuleManager;
 import dev.flamesentinell.flameffacore.villager.VillagerService;
 import dev.flamesentinell.flameffacore.weapon.AegisShield;
 import dev.flamesentinell.flameffacore.weapon.StunMace;
@@ -107,6 +108,7 @@ public final class FlameFFACore extends JavaPlugin {
    private Cooldowns cooldowns;
    private KitCooldownStore kitCooldowns;
    private Tasks tasks;
+   private ModuleManager modules;
 
    public void onEnable() {
       this.tasks = new Tasks(this);
@@ -198,6 +200,8 @@ public final class FlameFFACore extends JavaPlugin {
       this.packHost = new PackHost(this);
       this.packHost.start();
       Bukkit.getPluginManager().registerEvents(this.packHost, this);
+      this.modules = new ModuleManager(this);
+      this.modules.enableAll();
       this.registerCommands();
       this.tasks.global(() -> {
          int var1x = this.combatHud.sweepLeftovers();
@@ -234,6 +238,10 @@ public final class FlameFFACore extends JavaPlugin {
    }
 
    public void onDisable() {
+      if (this.modules != null) {
+         this.modules.disableAll();
+      }
+
       if (this.packHost != null) {
          this.packHost.stop();
       }
@@ -308,6 +316,7 @@ public final class FlameFFACore extends JavaPlugin {
          var2.register("booster", "give or take the discord booster rank", List.of("boost"), new BoosterCommand(this));
          var2.register("stats", "your kills, deaths and damage", List.of("stat", "profile"), new StatsCommand(this));
          var2.register("leaderboard", "place a standing top ten", List.of("lb", "top"), new LeaderboardCommand(this));
+         this.modules.registerCommands(var2);
       });
    }
 
@@ -493,6 +502,10 @@ public final class FlameFFACore extends JavaPlugin {
             }
          });
       }
+   }
+
+   public ModuleManager modules() {
+      return this.modules;
    }
 
    public Tasks tasks() {

@@ -4,6 +4,24 @@
 # bumped when a setting has to be retuned, the plugin then takes that one key back
 config-version: 28
 
+# the plugins merged into the core, each keeps its own file next to this one
+# set enabled to false and restart to turn one off
+modules:
+  daily:
+    enabled: true
+  holograms:
+    enabled: true
+  spawnguard:
+    enabled: true
+  store:
+    enabled: true
+  trims:
+    enabled: true
+  tweaks:
+    enabled: true
+  windbrake:
+    enabled: true
+
 storage:
   # h2 keeps everything in plugins/FlameFFACore/data.mv.db, nothing to install, works on any host
   # mariadb is for when you want the data on a real database server, fill in the rest for that
