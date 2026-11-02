@@ -150,7 +150,7 @@ public final class FreezeService implements Listener {
          if (command != null && !command.isBlank()) {
             String resolved = command.replace("{player}", player.getName());
             this.plugin.async(() -> this.plugin.audit().staff(null, "CONSOLE", "freeze_logout", player.getUniqueId(), player.getName(), resolved));
-            Bukkit.getScheduler().runTask(this.plugin, () -> Bukkit.dispatchCommand(Bukkit.getConsoleSender(), resolved));
+            this.plugin.sync(() -> Bukkit.dispatchCommand(Bukkit.getConsoleSender(), resolved));
          }
       }
    }

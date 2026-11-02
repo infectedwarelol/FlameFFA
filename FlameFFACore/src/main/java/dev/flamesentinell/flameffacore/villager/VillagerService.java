@@ -9,6 +9,10 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.LinkedHashSet;
+import java.util.Collections;
+import java.util.concurrent.ConcurrentHashMap;
+import dev.flamesentinell.flameffacore.util.Tasks;
 import java.util.Set;
 import java.util.UUID;
 import java.util.Map.Entry;
@@ -48,9 +52,9 @@ public final class VillagerService implements Listener {
    private static final int[] TRADE_STARTS = new int[]{0, 4};
    private static final Set<Integer> DIVIDERS = Set.of(3, 7, 8);
    private final FlameFFACore plugin;
-   private final Map<String, ItemStack[]> presets = new LinkedHashMap<>();
-   private final Map<String, String> setBy = new LinkedHashMap<>();
-   private final Map<UUID, VillagerStore.Row> live = new LinkedHashMap<>();
+   private final Map<String, ItemStack[]> presets = Collections.synchronizedMap(new LinkedHashMap<>());
+   private final Map<String, String> setBy = Collections.synchronizedMap(new LinkedHashMap<>());
+   private final Map<UUID, VillagerStore.Row> live = new ConcurrentHashMap<>();
 
    public VillagerService(FlameFFACore var1) {
       this.plugin = var1;
@@ -71,7 +75,9 @@ public final class VillagerService implements Listener {
    }
 
    public Set<String> names() {
-      return this.presets.keySet();
+      synchronized (this.presets) {
+         return new LinkedHashSet<>(this.presets.keySet());
+      }
    }
 
    public String setBy(String var1) {
@@ -377,7 +383,7 @@ public final class VillagerService implements Listener {
          var1.sendMessage(this.plugin.configs().msg("villager.skin-looking", "name", var4));
          this.plugin.async(() -> {
             SkinFetcher.Skin var4x = SkinFetcher.fetch(var4);
-            Bukkit.getScheduler().runTask(this.plugin, () -> {
+            this.plugin.sync(var1, () -> {
                if (var4x == null) {
                   var1.sendMessage(this.plugin.configs().msg("villager.skin-unknown", "name", var4));
                } else {
@@ -432,32 +438,52 @@ public final class VillagerService implements Listener {
 
    public void restore() {
       this.live.clear();
-      int var1 = 0;
-
-      for (VillagerStore.Row var3 : this.plugin.villagerStore().loadAll()) {
-         if (this.presets.containsKey(var3.preset())) {
-            Location var4 = var3.location();
-            var4.getChunk().load();
-            Entity var5 = var3.entity() == null ? null : Bukkit.getEntity(var3.entity());
-            boolean var6 = var5 instanceof Mannequin == (var3.skin() != null);
-            if (var5 != null && var5.isValid() && this.isTrader(var5) && var6) {
-               this.live.put(var5.getUniqueId(), var3);
-            } else {
-               if (var5 != null) {
-                  var5.remove();
+      if (Tasks.FOLIA) {
+         this.plugin.async(() -> {
+            for (VillagerStore.Row row : this.plugin.villagerStore().loadAll()) {
+               if (this.presets.containsKey(row.preset())) {
+                  Location at = row.location();
+                  if (at != null && at.getWorld() != null) {
+                     at.getWorld().getChunkAtAsync(at).thenRun(() -> this.plugin.tasks().runAt(at, () -> this.restoreOne(row)));
+                  }
                }
+            }
+         });
+      } else {
+         int rebuilt = 0;
 
-               LivingEntity var7 = this.materialise(var3.preset(), var4, var3.skin());
-               long var8 = var3.id();
-               UUID var10 = var7.getUniqueId();
-               this.plugin.async(() -> this.plugin.villagerStore().rebind(var8, var10));
-               this.live.put(var10, new VillagerStore.Row(var8, var10, var3.preset(), var4, var3.skin()));
-               var1++;
+         for (VillagerStore.Row row : this.plugin.villagerStore().loadAll()) {
+            if (this.presets.containsKey(row.preset())) {
+               row.location().getChunk().load();
+               if (this.restoreOne(row)) {
+                  rebuilt++;
+               }
             }
          }
-      }
 
-      this.plugin.getSLF4JLogger().info("restored {} trader villagers, {} rebuilt", this.live.size(), var1);
+         this.plugin.getSLF4JLogger().info("restored {} trader villagers, {} rebuilt", this.live.size(), rebuilt);
+      }
+   }
+
+   private boolean restoreOne(VillagerStore.Row var3) {
+      Location var4 = var3.location();
+      Entity var5 = var3.entity() == null ? null : Bukkit.getEntity(var3.entity());
+      boolean var6 = var5 instanceof Mannequin == (var3.skin() != null);
+      if (var5 != null && var5.isValid() && this.isTrader(var5) && var6) {
+         this.live.put(var5.getUniqueId(), var3);
+         return false;
+      } else {
+         if (var5 != null) {
+            var5.remove();
+         }
+
+         LivingEntity var7 = this.materialise(var3.preset(), var4, var3.skin());
+         long var8 = var3.id();
+         UUID var10 = var7.getUniqueId();
+         this.plugin.async(() -> this.plugin.villagerStore().rebind(var8, var10));
+         this.live.put(var10, new VillagerStore.Row(var8, var10, var3.preset(), var4, var3.skin()));
+         return true;
+      }
    }
 
    @EventHandler(

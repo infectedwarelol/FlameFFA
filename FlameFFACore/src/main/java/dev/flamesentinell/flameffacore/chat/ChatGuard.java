@@ -65,7 +65,8 @@ public final class ChatGuard implements Listener {
             }
 
             player.sendMessage(this.plugin.configs().msg("chat.blocked"));
-            this.plugin.sync(() -> this.punish(player, hit, Text.plain(event.message())));
+            String said = Text.plain(event.message());
+            this.plugin.sync(() -> this.punish(player, hit, said));
          }
       }
    }

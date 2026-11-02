@@ -5,6 +5,7 @@ import dev.flamesentinell.flameffacore.util.Bots;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Collections;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
@@ -28,14 +29,13 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.inventory.meta.FireworkMeta;
-import org.bukkit.scheduler.BukkitTask;
 import org.bukkit.util.Vector;
 
 public final class CosmeticService implements Listener {
    public static final String KILL = "kill";
    public static final String AURA = "aura";
    private final FlameFFACore plugin;
-   private final Map<String, List<CosmeticService.Cosmetic>> catalogue = new LinkedHashMap<>();
+   private volatile Map<String, List<CosmeticService.Cosmetic>> catalogue = Map.of();
    private final Map<UUID, Map<String, String>> chosen = new ConcurrentHashMap<>();
    private boolean enabled = true;
    private int auraStreak = 5;
@@ -48,7 +48,7 @@ public final class CosmeticService implements Listener {
       FileConfiguration cfg = this.plugin.configs().get("cosmetics.yml");
       this.enabled = cfg.getBoolean("enabled", true);
       this.auraStreak = Math.max(1, cfg.getInt("aura-from-streak", 5));
-      this.catalogue.clear();
+      Map<String, List<CosmeticService.Cosmetic>> loaded = new LinkedHashMap<>();
 
       for (String slot : List.of("kill", "aura")) {
          List<CosmeticService.Cosmetic> list = new ArrayList<>();
@@ -71,9 +71,10 @@ public final class CosmeticService implements Listener {
             }
          }
 
-         this.catalogue.put(slot, list);
+         loaded.put(slot, list);
       }
 
+      this.catalogue = Collections.unmodifiableMap(loaded);
       int total = this.catalogue.values().stream().mapToInt(List::size).sum();
       this.plugin.getSLF4JLogger().info("loaded {} cosmetics across {} slots", total, this.catalogue.size());
    }
@@ -190,13 +191,12 @@ public final class CosmeticService implements Listener {
       }
    }
 
-   private void animate(int ticks, IntConsumer body) {
-      BukkitTask[] handle = new BukkitTask[1];
+   private void animate(Location at, int ticks, IntConsumer body) {
       int[] age = new int[]{0};
-      handle[0] = Bukkit.getScheduler().runTaskTimer(this.plugin, () -> {
+      this.plugin.tasks().regionTimer(at, task -> {
          int t = (int)(age[0]++);
          if (t >= ticks) {
-            handle[0].cancel();
+            task.cancel();
          } else {
             body.accept(t);
          }
@@ -228,7 +228,7 @@ public final class CosmeticService implements Listener {
       DustOptions armDust = new DustOptions(cosmetic.secondary(), 0.85F);
       DustTransition core = new DustTransition(Color.WHITE, cosmetic.secondary(), 1.2F);
       Location p = at.clone();
-      this.animate(26, t -> {
+      this.animate(at, 26, t -> {
          double k = t / 26.0;
          double ease = 1.0 - Math.pow(1.0 - k, 3.0);
          double radius = 5.2 * ease;
@@ -282,7 +282,7 @@ public final class CosmeticService implements Listener {
       Location floor = at.clone().subtract(0.0, 0.9, 0.0);
       DustOptions veinDust = new DustOptions(cosmetic.secondary(), 1.1F);
       Location p = at.clone();
-      this.animate(18, t -> {
+      this.animate(at, 18, t -> {
          double r = 0.5 + t * 0.42;
          int points = (int)Math.max(10.0, r * 9.0);
 
@@ -309,7 +309,7 @@ public final class CosmeticService implements Listener {
          souls.add(at.clone().add(Math.cos(a) * 0.55, 0.0, Math.sin(a) * 0.55));
       }
 
-      this.animate(36, t -> {
+      this.animate(at, 36, t -> {
          for (int ix = 0; ix < souls.size(); ix++) {
             Location soul = souls.get(ix);
             if (t < 14) {
@@ -344,7 +344,7 @@ public final class CosmeticService implements Listener {
       Location base = at.clone().subtract(0.0, 0.9, 0.0);
       DustOptions emberDust = new DustOptions(cosmetic.primary(), 1.0F);
       Location p = at.clone();
-      this.animate(30, t -> {
+      this.animate(at, 30, t -> {
          double climb = t * 0.19;
          double r = Math.max(0.15, 1.5 - climb * 0.4);
 
@@ -382,9 +382,9 @@ public final class CosmeticService implements Listener {
       for (int i = 0; i < 3; i++) {
          int delay = i * 6;
          double offX = (i - 1) * 0.9;
-         Bukkit.getScheduler()
-            .runTaskLater(
-               this.plugin,
+         this.plugin.tasks()
+            .regionLater(
+               at,
                () -> {
                   Location spot = at.clone().add(offX, 0.6 + Math.random(), (Math.random() - 0.5) * 1.2);
                   Firework rocket = (Firework)world.spawn(
