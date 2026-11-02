@@ -32,7 +32,7 @@ public final class TxnStore {
 
             return var7;
          } catch (SQLException var13) {
-            return !KeyStore.isDuplicate(var13);
+            return false;
          }
       } else {
          return true;

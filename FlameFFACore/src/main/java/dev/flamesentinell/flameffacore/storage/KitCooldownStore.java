@@ -19,7 +19,7 @@ public final class KitCooldownStore {
    }
 
    public void load(UUID uuid) {
-      Map<String, Long> mine = new HashMap<>();
+      Map<String, Long> mine = new ConcurrentHashMap<>();
       long now = System.currentTimeMillis();
 
       try (

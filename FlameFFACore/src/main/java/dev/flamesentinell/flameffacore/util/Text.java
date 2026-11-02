@@ -16,6 +16,7 @@ import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
 
 public final class Text {
    private static final MiniMessage MM = MiniMessage.miniMessage();
+   private static final Pattern TAG_PATTERN = Pattern.compile("^((?:<[^/>][^>]*>)*)(.*?)((?:</[^>]*>)*)$", Pattern.DOTALL);
    private static Component prefix = Component.empty();
 
    private Text() {
@@ -71,7 +72,7 @@ public final class Text {
          TextColor var5 = firstColor(var1);
          return Component.text("[" + var2 + "]", (TextColor)(var5 == null ? NamedTextColor.GRAY : var5));
       } else {
-         Matcher var3 = Pattern.compile("^((?:<[^/>][^>]*>)*)(.*?)((?:</[^>]*>)*)$", 32).matcher(var0.trim());
+         Matcher var3 = TAG_PATTERN.matcher(var0.trim());
          if (var3.matches()) {
             return MM.deserialize(var3.group(1) + "[" + var2 + "]" + var3.group(3));
          } else {
