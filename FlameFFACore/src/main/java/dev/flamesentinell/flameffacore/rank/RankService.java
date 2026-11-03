@@ -6,6 +6,7 @@ import dev.flamesentinell.flameffacore.util.Bots;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -26,9 +27,9 @@ import org.bukkit.entity.Player;
 
 public final class RankService {
    private final FlameFFACore plugin;
-   private final Map<String, Rank> ranks = new LinkedHashMap<>();
-   private final Set<String> hidden = ConcurrentHashMap.newKeySet();
-   private final Set<String> noKit = ConcurrentHashMap.newKeySet();
+   private volatile Map<String, Rank> ranks = Map.of();
+   private volatile Set<String> hidden = Set.of();
+   private volatile Set<String> noKit = Set.of();
    private LuckPerms luckPerms;
 
    public RankService(FlameFFACore var1) {
@@ -37,25 +38,25 @@ public final class RankService {
    }
 
    public void load() {
-      this.ranks.clear();
-      this.hidden.clear();
-      this.noKit.clear();
+      Map<String, Rank> loadedRanks = new LinkedHashMap<>();
+      Set<String> loadedHidden = ConcurrentHashMap.newKeySet();
+      Set<String> loadedNoKit = ConcurrentHashMap.newKeySet();
       ConfigurationSection var1 = this.plugin.configs().ranks().getConfigurationSection("ranks");
       if (var1 != null) {
          for (String var3 : var1.getKeys(false)) {
             ConfigurationSection var4 = var1.getConfigurationSection(var3);
             if (var4 != null) {
                if (var4.getBoolean("hidden", false)) {
-                  this.hidden.add(var3);
+                  loadedHidden.add(var3);
                }
 
                if (!var4.getBoolean("kit", true)) {
-                  this.noKit.add(var3);
+                  loadedNoKit.add(var3);
                }
 
                Material var5 = Material.matchMaterial(var4.getString("icon", "IRON_SPEAR"));
                int var6 = this.plugin.configs().main().getInt("arena.kit-cooldown-seconds", 0);
-               this.ranks
+               loadedRanks
                   .put(
                      var3,
                      new Rank(
@@ -72,6 +73,10 @@ public final class RankService {
             }
          }
       }
+
+      this.ranks = Collections.unmodifiableMap(loadedRanks);
+      this.hidden = loadedHidden;
+      this.noKit = loadedNoKit;
    }
 
    private LuckPerms lp() {

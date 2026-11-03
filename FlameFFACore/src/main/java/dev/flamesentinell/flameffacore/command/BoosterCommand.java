@@ -34,37 +34,43 @@ public final class BoosterCommand implements BasicCommand {
          } else {
             String action = args[0].toLowerCase(Locale.ROOT);
             String name = args[1];
-            UUID target = this.plugin.tebex().resolve(name);
-            if (target == null) {
-               sender.sendMessage(this.plugin.configs().msg("general.unknown-player", "name", name));
-            } else {
-               Player online = Bukkit.getPlayer(target);
-               String shown = online != null ? online.getName() : name;
-               UUID actorId = sender instanceof Player p ? p.getUniqueId() : null;
-               switch (action) {
-                  case "add":
-                  case "give":
-                     this.plugin.async(() -> this.plugin.audit().staff(actorId, sender.getName(), "booster_add", target, shown, rankId));
-                     this.plugin.ranks().grant(target, rankId, 0).thenRun(() -> this.plugin.sync(() -> {
-                        this.plugin.tebex().notifyOrQueue(target, this.plugin.configs().messages().getString("booster.received", ""), rankId, 0);
-                        sender.sendMessage(this.plugin.configs().msg("booster.added", "player", shown));
-                     }));
-                     break;
-                  case "remove":
-                  case "take":
-                     this.plugin.async(() -> this.plugin.audit().staff(actorId, sender.getName(), "booster_remove", target, shown, rankId));
-                     this.plugin.ranks().revoke(target, rankId).thenRun(() -> this.plugin.sync(() -> {
-                        if (online != null) {
-                           online.sendMessage(this.plugin.configs().msg("booster.lost"));
-                        }
+            this.plugin.async(() -> {
+               UUID target = this.plugin.tebex().resolve(name);
+               this.plugin.sync(() -> this.apply(sender, rankId, action, name, target));
+            });
+         }
+      }
+   }
 
-                        sender.sendMessage(this.plugin.configs().msg("booster.removed", "player", shown));
-                     }));
-                     break;
-                  default:
-                     sender.sendMessage(this.plugin.configs().msg("general.usage", "usage", "/booster add|remove <player>"));
-               }
-            }
+   private void apply(CommandSender sender, String rankId, String action, String name, UUID target) {
+      if (target == null) {
+         sender.sendMessage(this.plugin.configs().msg("general.unknown-player", "name", name));
+      } else {
+         Player online = Bukkit.getPlayer(target);
+         String shown = online != null ? online.getName() : name;
+         UUID actorId = sender instanceof Player p ? p.getUniqueId() : null;
+         switch (action) {
+            case "add":
+            case "give":
+               this.plugin.async(() -> this.plugin.audit().staff(actorId, sender.getName(), "booster_add", target, shown, rankId));
+               this.plugin.ranks().grant(target, rankId, 0).thenRun(() -> this.plugin.sync(() -> {
+                  this.plugin.tebex().notifyOrQueue(target, this.plugin.configs().messages().getString("booster.received", ""), rankId, 0);
+                  sender.sendMessage(this.plugin.configs().msg("booster.added", "player", shown));
+               }));
+               break;
+            case "remove":
+            case "take":
+               this.plugin.async(() -> this.plugin.audit().staff(actorId, sender.getName(), "booster_remove", target, shown, rankId));
+               this.plugin.ranks().revoke(target, rankId).thenRun(() -> this.plugin.sync(() -> {
+                  if (online != null) {
+                     online.sendMessage(this.plugin.configs().msg("booster.lost"));
+                  }
+
+                  sender.sendMessage(this.plugin.configs().msg("booster.removed", "player", shown));
+               }));
+               break;
+            default:
+               sender.sendMessage(this.plugin.configs().msg("general.usage", "usage", "/booster add|remove <player>"));
          }
       }
    }

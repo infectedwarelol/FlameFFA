@@ -71,6 +71,9 @@ public final class LeaderboardCommand implements BasicCommand {
             if (args.length >= 6) {
                try {
                   at = new Location((World)Bukkit.getWorlds().get(0), Double.parseDouble(args[3]), Double.parseDouble(args[4]), Double.parseDouble(args[5]));
+                  if (!Double.isFinite(at.getX()) || !Double.isFinite(at.getY()) || !Double.isFinite(at.getZ())) {
+                     throw new NumberFormatException("coordinate out of range");
+                  }
                } catch (NumberFormatException var8) {
                   sender.sendMessage(Component.text("/leaderboard set <metric> <size> <x> <y> <z>"));
                   return;

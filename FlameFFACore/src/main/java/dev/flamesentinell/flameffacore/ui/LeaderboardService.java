@@ -20,12 +20,14 @@ import io.papermc.paper.threadedregions.scheduler.ScheduledTask;
 import dev.flamesentinell.flameffacore.util.Tasks;
 import java.util.Collections;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.atomic.AtomicInteger;
 
 public final class LeaderboardService {
    private static final String TAG = "flameffacore_board";
    public static final List<String> METRICS = List.of("kills", "deaths", "streak", "playtime");
    private final FlameFFACore plugin;
    private final List<TextDisplay> live = new CopyOnWriteArrayList<>();
+   private final AtomicInteger generation = new AtomicInteger();
    private ScheduledTask task;
 
    public LeaderboardService(FlameFFACore plugin) {
@@ -58,7 +60,8 @@ public final class LeaderboardService {
 
    public int sweep() {
       if (Tasks.FOLIA) {
-         this.live.clear();
+         this.generation.incrementAndGet();
+         this.removeLive();
          return 0;
       }
 
@@ -77,7 +80,7 @@ public final class LeaderboardService {
       return gone;
    }
 
-   private void despawn() {
+   private void removeLive() {
       for (TextDisplay display : this.live) {
          if (display != null) {
             this.plugin.tasks().runOn(display, () -> {
@@ -89,6 +92,11 @@ public final class LeaderboardService {
       }
 
       this.live.clear();
+   }
+
+   private void despawn() {
+      this.generation.incrementAndGet();
+      this.removeLive();
       if (Tasks.FOLIA) {
          return;
       }
@@ -139,6 +147,11 @@ public final class LeaderboardService {
       if (best < 0) {
          return false;
       } else {
+         Location removed = read(list.get(best));
+         if (removed != null) {
+            this.plugin.tasks().runAt(removed, () -> removed.getWorld().setChunkForceLoaded(removed.getBlockX() >> 4, removed.getBlockZ() >> 4, false));
+         }
+
          list.remove(best);
          this.plugin.configs().main().set("leaderboards.placed", list);
          this.save();
@@ -171,6 +184,7 @@ public final class LeaderboardService {
 
    private void spawn() {
       List<?> placed = this.boards();
+      int current = this.generation.incrementAndGet();
       this.live.clear();
       this.live.addAll(Collections.nCopies(placed.size(), null));
 
@@ -180,6 +194,10 @@ public final class LeaderboardService {
             if (at != null) {
                int slot = index;
                this.plugin.tasks().runAt(at, () -> {
+                  if (current != this.generation.get()) {
+                     return;
+                  }
+
                   TextDisplay display = (TextDisplay)at.getWorld().spawn(at, TextDisplay.class, d -> {
                      d.setBillboard(Billboard.CENTER);
                      d.setAlignment(TextAlignment.CENTER);
@@ -191,8 +209,11 @@ public final class LeaderboardService {
                      d.text(this.plugin.configs().msg("leaderboard.loading"));
                   });
                   at.getWorld().setChunkForceLoaded(at.getBlockX() >> 4, at.getBlockZ() >> 4, true);
-                  if (slot < this.live.size()) {
+                  if (current == this.generation.get() && slot < this.live.size()) {
                      this.live.set(slot, display);
+                  } else {
+                     display.remove();
+                     return;
                   }
 
                   if (Tasks.FOLIA) {

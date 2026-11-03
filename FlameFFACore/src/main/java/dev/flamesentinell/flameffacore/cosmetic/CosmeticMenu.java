@@ -64,6 +64,14 @@ public final class CosmeticMenu implements Listener {
       player.openInventory(menu);
    }
 
+   private void reopen(Player player) {
+      this.plugin.tasks().entity(player, () -> {
+         if (player.isOnline() && player.getOpenInventory().getTopInventory().getHolder(false) instanceof CosmeticMenu.Holder) {
+            this.open(player);
+         }
+      });
+   }
+
    private ItemStack label(String slot) {
       byte var4 = -1;
       switch (slot.hashCode()) {
@@ -134,7 +142,7 @@ public final class CosmeticMenu implements Listener {
                if (id.equals("none")) {
                   this.plugin.cosmetics().pick(player, slot, null);
                   player.sendMessage(this.plugin.configs().msg("cosmetics.cleared", "slot", slot));
-                  this.open(player);
+                  this.reopen(player);
                } else {
                   CosmeticService.Cosmetic cosmetic = this.plugin.cosmetics().find(slot, id);
                   if (cosmetic != null) {
@@ -143,7 +151,7 @@ public final class CosmeticMenu implements Listener {
                      } else {
                         this.plugin.cosmetics().pick(player, slot, id);
                         player.sendMessage(this.plugin.configs().msg("cosmetics.picked", "name", Text.plain(Text.parse(cosmetic.display()))));
-                        this.open(player);
+                        this.reopen(player);
                      }
                   }
                }

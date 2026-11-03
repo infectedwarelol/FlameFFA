@@ -5,7 +5,6 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
@@ -37,7 +36,8 @@ public final class KitCooldownStore {
       } catch (SQLException var16) {
       }
 
-      this.cache.put(uuid, mine);
+      Map<String, Long> current = this.cache.computeIfAbsent(uuid, k -> new ConcurrentHashMap<>());
+      mine.forEach((rankId, until) -> current.merge(rankId, until, Math::max));
    }
 
    public void forget(UUID uuid) {

@@ -44,9 +44,12 @@ public final class ChatGuard implements Listener {
       int split = format.indexOf("<message>");
       String head = split < 0 ? format : format.substring(0, split);
       String tail = split < 0 ? "" : format.substring(split + "<message>".length());
+      Player sender = event.getPlayer();
+      Component prefix = Text.parse(head, "rank", this.plugin.hud().rankTag(sender), "player", sender.getName());
+      Component suffix = tail.isEmpty() ? null : Text.parse(tail);
       event.renderer((source, name, message, viewer) -> {
-         Component out = Text.parse(head, "rank", this.plugin.hud().rankTag(source), "player", source.getName()).append(message);
-         return tail.isEmpty() ? out : out.append(Text.parse(tail));
+         Component out = prefix.append(message);
+         return suffix == null ? out : out.append(suffix);
       });
    }
 

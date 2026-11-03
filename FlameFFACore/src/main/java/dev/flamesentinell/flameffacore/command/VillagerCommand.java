@@ -182,10 +182,11 @@ public final class VillagerCommand implements BasicCommand {
    }
 
    private static double coord(String var0, double var1) {
-      if (var0.startsWith("~")) {
-         return var0.length() == 1 ? var1 : var1 + Double.parseDouble(var0.substring(1));
+      double value = var0.startsWith("~") ? (var0.length() == 1 ? var1 : var1 + Double.parseDouble(var0.substring(1))) : Double.parseDouble(var0);
+      if (!Double.isFinite(value) || Math.abs(value) > 3.0E7) {
+         throw new NumberFormatException("coordinate out of range");
       } else {
-         return Double.parseDouble(var0);
+         return value;
       }
    }
 

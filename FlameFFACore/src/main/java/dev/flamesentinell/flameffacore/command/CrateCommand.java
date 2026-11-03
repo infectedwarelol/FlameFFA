@@ -195,12 +195,20 @@ public final class CrateCommand implements BasicCommand {
                   var25[var26] = (ItemStack)var7.get(var26);
                }
 
-               if (!this.plugin.blobs().save("crateloot", var4, var25, var1.getName())) {
-                  var1.sendMessage("save failed");
-               } else {
-                  this.plugin.crates().installProbePool(var4, var25);
-                  var1.sendMessage("crate " + var4 + " loot set  " + var7.size() + " slots  " + var8);
-               }
+               String actorName = var1.getName();
+               int slotCount = var7.size();
+               String summary = var8.toString();
+               this.plugin.async(() -> {
+                  boolean saved = this.plugin.blobs().save("crateloot", var4, var25, actorName);
+                  this.plugin.sync(() -> {
+                     if (!saved) {
+                        var1.sendMessage("save failed");
+                     } else {
+                        this.plugin.crates().installProbePool(var4, var25);
+                        var1.sendMessage("crate " + var4 + " loot set  " + slotCount + " slots  " + summary);
+                     }
+                  });
+               });
             } else {
                var1.sendMessage("need 1 to 54 slots  got " + var7.size());
             }

@@ -67,6 +67,8 @@ public final class HudService implements Listener {
    private final Map<UUID, HudService.Session> sessions = new ConcurrentHashMap<>();
    private final Map<UUID, String> tagKeys = new ConcurrentHashMap<>();
    private final Map<UUID, Integer> shownHealth = new ConcurrentHashMap<>();
+   private final Map<UUID, HudService.TagInfo> tagInfos = new ConcurrentHashMap<>();
+   private static final long TAG_INFO_TTL_MS = 1000L;
    private static final String HP_OBJECTIVE = "flamehp";
    private static final String BOT_TEAM = "smbot_bot";
    private final List<TextDisplay> crateLabels = new CopyOnWriteArrayList<>();
@@ -182,7 +184,30 @@ public final class HudService implements Listener {
       }
    }
 
-   private String tagDisplay(Player var1) {
+   private HudService.TagInfo tagInfo(Player player) {
+      long now = System.currentTimeMillis();
+      HudService.TagInfo cached = this.tagInfos.get(player.getUniqueId());
+      if (cached != null && now - cached.at() < TAG_INFO_TTL_MS) {
+         return cached;
+      }
+
+      HudService.TagInfo fresh = new HudService.TagInfo(this.computeTagKey(player), this.computeTagDisplay(player), now);
+      if (player.isOnline()) {
+         this.tagInfos.put(player.getUniqueId(), fresh);
+      }
+
+      return fresh;
+   }
+
+   private String tagDisplay(Player player) {
+      return this.tagInfo(player).display();
+   }
+
+   private String tagKey(Player player) {
+      return this.tagInfo(player).key();
+   }
+
+   private String computeTagDisplay(Player var1) {
       if (this.plugin.configs().main().getBoolean("tab.staff-tags", true)) {
          StaffRole var2 = this.plugin.staff().role(var1);
          String[] var3 = var2 == StaffRole.OWNER ? null : this.staffGroup(var1);
@@ -209,7 +234,7 @@ public final class HudService implements Listener {
       return var5 == null ? null : var5.display();
    }
 
-   private String tagKey(Player var1) {
+   private String computeTagKey(Player var1) {
       if (botTagged(var1)) {
          return "zbot";
       } else {
@@ -355,6 +380,7 @@ public final class HudService implements Listener {
 
    private void dropTag(Player var1) {
       this.tagKeys.remove(var1.getUniqueId());
+      this.tagInfos.remove(var1.getUniqueId());
       this.shownHealth.remove(var1.getUniqueId());
       if (Tasks.FOLIA) {
          return;
@@ -454,6 +480,8 @@ public final class HudService implements Listener {
    }
 
    public void refreshTabList() {
+      this.tagInfos.clear();
+
       for (Player var2 : Bukkit.getOnlinePlayers()) {
          this.plugin.tasks().runOn(var2, () -> {
             if (var2.isOnline() && !Bots.is(var2)) {
@@ -583,6 +611,7 @@ public final class HudService implements Listener {
       Tasks.cancel(this.tickers.remove(var1.getPlayer().getUniqueId()));
       this.playerTicks.remove(var1.getPlayer().getUniqueId());
       this.dropTag(var1.getPlayer());
+      this.plugin.cooldownBar().drop(var1.getPlayer());
       if (!Bots.is(var1.getPlayer())) {
          this.flush(var1.getPlayer().getUniqueId(), true);
       }
@@ -916,6 +945,9 @@ public final class HudService implements Listener {
       }
 
       this.spawnCrateLabels();
+   }
+
+   private record TagInfo(String key, String display, long at) {
    }
 
    private static final class Session {

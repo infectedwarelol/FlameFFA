@@ -4,11 +4,11 @@ import dev.flamesentinell.flameffacore.FlameFFACore;
 import io.papermc.paper.command.brigadier.BasicCommand;
 import io.papermc.paper.command.brigadier.CommandSourceStack;
 import java.util.Collection;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 import org.bukkit.Location;
 import org.bukkit.World;
 import org.bukkit.command.CommandSender;
@@ -18,7 +18,7 @@ import org.jetbrains.annotations.NotNull;
 public final class SafezoneCommand implements BasicCommand {
    private static final String USAGE = "/safezone pos1|pos2|set [x1 y1 z1 x2 y2 z2]|info|clear";
    private final FlameFFACore plugin;
-   private final Map<UUID, Location[]> corners = new HashMap<>();
+   private final Map<UUID, Location[]> corners = new ConcurrentHashMap<>();
 
    public SafezoneCommand(FlameFFACore plugin) {
       this.plugin = plugin;

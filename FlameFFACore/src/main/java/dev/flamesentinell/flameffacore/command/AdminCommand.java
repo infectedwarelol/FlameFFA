@@ -339,11 +339,15 @@ public final class AdminCommand implements BasicCommand {
          )
       );
       sender.sendMessage(Component.text("  kit cooldowns: " + cd));
-      sender.sendMessage(Component.text("  cooldown rows held: " + this.plugin.kitCooldowns().prune() + " expired pruned"));
 
       for (String line : bad) {
          sender.sendMessage(Component.text("  " + line));
       }
+
+      this.plugin.async(() -> {
+         int pruned = this.plugin.kitCooldowns().prune();
+         sender.sendMessage(Component.text("  cooldown rows held: " + pruned + " expired pruned"));
+      });
    }
 
    private boolean mayGrant(CommandSender sender, String targetToken) {
@@ -385,6 +389,9 @@ public final class AdminCommand implements BasicCommand {
                   at = new Location(
                      this.plugin.arena().spawn().getWorld(), Double.parseDouble(args[2]), Double.parseDouble(args[3]), Double.parseDouble(args[4])
                   );
+                  if (!Double.isFinite(at.getX()) || !Double.isFinite(at.getY()) || !Double.isFinite(at.getZ()) || at.getWorld() == null) {
+                     throw new NumberFormatException("coordinate out of range");
+                  }
                } catch (NumberFormatException var7) {
                   sender.sendMessage(this.plugin.configs().msg("safezone.bad-coords"));
                   return;
@@ -395,7 +402,9 @@ public final class AdminCommand implements BasicCommand {
                at = this.plugin.arena().spawn();
             }
 
-            this.plugin.cosmetics().demo(sender instanceof Player p2 ? p2 : null, at, cosmetic);
+            Player viewer = sender instanceof Player p2 ? p2 : null;
+            Location spot = at;
+            this.plugin.tasks().runAt(spot, () -> this.plugin.cosmetics().demo(viewer, spot, cosmetic));
             sender.sendMessage(Component.text("playing " + cosmetic.id() + " at " + (int)at.getX() + " " + (int)at.getY() + " " + (int)at.getZ()));
          }
       }
@@ -417,6 +426,9 @@ public final class AdminCommand implements BasicCommand {
                   at = new Location(
                      this.plugin.arena().spawn().getWorld(), Double.parseDouble(args[2]), Double.parseDouble(args[3]), Double.parseDouble(args[4])
                   );
+                  if (!Double.isFinite(at.getX()) || !Double.isFinite(at.getY()) || !Double.isFinite(at.getZ()) || at.getWorld() == null) {
+                     throw new NumberFormatException("coordinate out of range");
+                  }
                } catch (NumberFormatException var7) {
                   sender.sendMessage(this.plugin.configs().msg("safezone.bad-coords"));
                   return;
@@ -427,7 +439,8 @@ public final class AdminCommand implements BasicCommand {
                at = this.plugin.arena().spawn();
             }
 
-            weapon.demo(this.plugin, at);
+            Location spot = at;
+            this.plugin.tasks().runAt(spot, () -> weapon.demo(this.plugin, spot));
             sender.sendMessage(Component.text("firing " + weapon.id() + " at " + at.getBlockX() + " " + at.getBlockY() + " " + at.getBlockZ()));
          }
       }
@@ -556,7 +569,9 @@ public final class AdminCommand implements BasicCommand {
          String value = args[3];
          int number = parse(args[4], 1);
          String txn = args.length > 5 ? args[5] : null;
-         if (!this.mayGrant(sender, target)) {
+         if (number < 0) {
+            sender.sendMessage(this.plugin.configs().msg("general.usage", "usage", USAGE));
+         } else if (!this.mayGrant(sender, target)) {
             this.audit(sender, "grant_denied", target, kind + " " + value + " x" + number);
          } else {
             switch (kind) {
@@ -644,13 +659,18 @@ public final class AdminCommand implements BasicCommand {
                return;
          }
 
-         for (ItemStack over : player.getInventory().addItem(new ItemStack[]{stack}).values()) {
-            player.getWorld().dropItemNaturally(player.getLocation(), over);
-         }
+         String minted = "weapon".equalsIgnoreCase(args[1]) ? args[2].toLowerCase(Locale.ROOT) : args[1].toLowerCase(Locale.ROOT);
+         int given = amount;
+         this.plugin.tasks().runOn(player, () -> {
+            if (player.isOnline()) {
+               for (ItemStack over : player.getInventory().addItem(new ItemStack[]{stack}).values()) {
+                  player.getWorld().dropItemNaturally(player.getLocation(), over);
+               }
 
-         what = "weapon".equalsIgnoreCase(args[1]) ? args[2].toLowerCase(Locale.ROOT) : args[1].toLowerCase(Locale.ROOT);
-         player.sendMessage(this.plugin.configs().msg("general.minted", "amount", String.valueOf(amount), "what", what));
-         this.audit(sender, "mint_" + what, player.getName(), "x" + amount);
+               player.sendMessage(this.plugin.configs().msg("general.minted", "amount", String.valueOf(given), "what", minted));
+            }
+         });
+         this.audit(sender, "mint_" + minted, player.getName(), "x" + amount);
       }
    }
 

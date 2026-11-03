@@ -128,7 +128,10 @@ public final class CosmeticService implements Listener {
          UUID uuid = event.getPlayer().getUniqueId();
          this.plugin.async(() -> {
             Map<String, String> saved = this.plugin.cosmeticStore().load(uuid);
-            this.chosen.put(uuid, new ConcurrentHashMap<>(saved));
+            if (Bukkit.getPlayer(uuid) != null) {
+               Map<String, String> mine = this.chosen.computeIfAbsent(uuid, k -> new ConcurrentHashMap<>());
+               saved.forEach(mine::putIfAbsent);
+            }
          });
       }
    }
