@@ -23,6 +23,7 @@ import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.entity.Entity;
+import org.bukkit.entity.HumanEntity;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Mannequin;
 import org.bukkit.entity.Player;
@@ -225,18 +226,31 @@ public final class VillagerService implements Listener {
             }
          }
 
-         String var9 = var1.getPlayer().getName();
-         if (!this.plugin.blobs().save("villager", var2.presetId, var8, var9)) {
-            var1.getPlayer().sendMessage(this.plugin.configs().msg("villager.save-failed", "preset", var2.presetId));
-         } else {
-            this.presets.put(var2.presetId, var8);
-            this.setBy.put(var2.presetId, var9);
-            int var10 = this.recipes(var2.presetId).size();
-            var1.getPlayer().sendMessage(this.plugin.configs().msg("villager.saved", "preset", var2.presetId, "count", String.valueOf(var10)));
-            UUID var6 = var1.getPlayer().getUniqueId();
-            String var7 = var2.presetId;
-            this.plugin.async(() -> this.plugin.audit().staff(var6, var9, "villager_preset_set", null, var7, var10 + " trades"));
-         }
+         HumanEntity var3 = var1.getPlayer();
+         String var9 = var3.getName();
+         this.presets.put(var2.presetId, var8);
+         this.setBy.put(var2.presetId, var9);
+         int var10 = this.recipes(var2.presetId).size();
+         UUID var6 = var3.getUniqueId();
+         String var7 = var2.presetId;
+         this.plugin.async(() -> {
+            boolean var11 = this.plugin.blobs().save("villager", var7, var8, var9);
+            if (var11) {
+               this.plugin.audit().staff(var6, var9, "villager_preset_set", null, var7, var10 + " trades");
+            } else {
+               this.plugin.getSLF4JLogger().error("could not save villager preset {}", var7);
+            }
+
+            this.plugin
+               .sync(
+                  var3,
+                  () -> var3.sendMessage(
+                     var11
+                        ? this.plugin.configs().msg("villager.saved", "preset", var7, "count", String.valueOf(var10))
+                        : this.plugin.configs().msg("villager.save-failed", "preset", var7)
+                  )
+               );
+         });
       }
    }
 

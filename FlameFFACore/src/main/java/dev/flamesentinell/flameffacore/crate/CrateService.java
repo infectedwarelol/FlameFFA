@@ -13,12 +13,14 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.Set;
 import java.util.UUID;
 import java.util.Map.Entry;
+import net.kyori.adventure.text.Component;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
 import org.bukkit.Sound;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
+import org.bukkit.entity.HumanEntity;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
@@ -32,6 +34,7 @@ import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.inventory.InventoryCloseEvent;
 import org.bukkit.event.inventory.InventoryDragEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
+import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.event.server.PluginDisableEvent;
 import org.bukkit.inventory.EquipmentSlot;
@@ -39,6 +42,7 @@ import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.InventoryHolder;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.persistence.PersistentDataType;
+import org.bukkit.plugin.IllegalPluginAccessException;
 import io.papermc.paper.threadedregions.scheduler.ScheduledTask;
 import org.jetbrains.annotations.NotNull;
 
@@ -50,6 +54,7 @@ public final class CrateService implements Listener {
    private final Map<String, String> setBy = new ConcurrentHashMap<>();
    private final Map<UUID, CrateService.Roll> rolls = new ConcurrentHashMap<>();
    private final Set<UUID> busy = ConcurrentHashMap.newKeySet();
+   private final Map<UUID, Integer> owedTokens = new ConcurrentHashMap<>();
    private static final int[] STEPS = new int[]{2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 4, 4, 4, 6, 7};
    public static final NamespacedKey WEIGHT = new NamespacedKey("flameffa", "crate_weight");
 
@@ -133,32 +138,26 @@ public final class CrateService implements Listener {
             }
          }
 
-         String var11 = var1.getPlayer().getName();
-         boolean var12 = this.plugin.blobs().save("crateloot", var2.crateId, var10, var11);
-         if (!var12) {
-            var1.getPlayer().sendMessage(this.plugin.configs().msg("crate.save-failed", "crate", var2.crateId));
-         } else {
-            this.loot.put(var2.crateId, var10);
-            this.setBy.put(var2.crateId, var11);
-            var1.getPlayer()
-               .sendMessage(
-                  this.plugin
-                     .configs()
-                     .msg(
-                        "crate.loot-saved",
-                        "crate",
-                        var2.crateId,
-                        "count",
-                        String.valueOf(var4),
-                        "chance",
-                        var4 == 0 ? "0" : String.valueOf(Math.round(100.0 / var4))
-                     )
-               );
-            UUID var7 = var1.getPlayer().getUniqueId();
-            String var8 = var4 + " entries";
-            String var9 = var2.crateId;
-            this.plugin.async(() -> this.plugin.audit().staff(var7, var11, "crate_loot_set", null, var9, var8));
-         }
+         HumanEntity var3 = var1.getPlayer();
+         String var11 = var3.getName();
+         this.loot.put(var2.crateId, var10);
+         this.setBy.put(var2.crateId, var11);
+         Component var13 = this.plugin
+            .configs()
+            .msg("crate.loot-saved", "crate", var2.crateId, "count", String.valueOf(var4), "chance", var4 == 0 ? "0" : String.valueOf(Math.round(100.0 / var4)));
+         UUID var7 = var3.getUniqueId();
+         String var8 = var4 + " entries";
+         String var9 = var2.crateId;
+         this.plugin.async(() -> {
+            boolean var12 = this.plugin.blobs().save("crateloot", var9, var10, var11);
+            if (var12) {
+               this.plugin.audit().staff(var7, var11, "crate_loot_set", null, var9, var8);
+            } else {
+               this.plugin.getSLF4JLogger().error("could not save the loot of crate {}", var9);
+            }
+
+            this.plugin.sync(var3, () -> var3.sendMessage(var12 ? var13 : this.plugin.configs().msg("crate.save-failed", "crate", var9)));
+         });
       }
    }
 
@@ -194,13 +193,21 @@ public final class CrateService implements Listener {
             if (var4 != KeyStore.Result.OK) {
                this.busy.remove(var3);
                this.plugin.sync(var1, () -> var1.sendMessage(this.plugin.configs().msg("keys.not-enough", "crate", var2.id())));
-            } else if (!this.plugin.isEnabled()
-               || var1.getScheduler().run(this.plugin, var6 -> this.reward(var1, var2), () -> {
+            } else {
+               boolean var6;
+               try {
+                  var6 = this.plugin.isEnabled() && var1.getScheduler().run(this.plugin, var7 -> this.reward(var1, var2), () -> {
+                     this.busy.remove(var3);
+                     this.plugin.async(() -> this.refundKey(var3, var2, var5));
+                  }) != null;
+               } catch (IllegalPluginAccessException var8) {
+                  var6 = false;
+               }
+
+               if (!var6) {
                   this.busy.remove(var3);
-                  this.plugin.async(() -> this.refundKey(var3, var2, var5));
-               }) == null) {
-               this.busy.remove(var3);
-               this.refundKey(var3, var2, var5);
+                  this.refundKey(var3, var2, var5);
+               }
             }
          });
       }
@@ -441,24 +448,56 @@ public final class CrateService implements Listener {
                   .async(
                      () -> {
                         KeyStore.Result var9 = this.plugin.keys().grant(var8, var2.id(), var3, "token_purchase", var1.getName(), null);
-                        this.plugin
-                           .sync(
-                              var1,
-                              () -> {
-                                 if (var9 != KeyStore.Result.OK) {
-                                    this.giveTokens(var1, var5);
-                                    var1.sendMessage(this.plugin.configs().msg("crate.save-failed", "crate", var2.id()));
-                                 } else {
-                                    var1.sendMessage(
-                                       this.plugin.configs().msg("crate.bought", "amount", String.valueOf(var3), "crate", var2.id(), "cost", String.valueOf(var5))
-                                    );
-                                 }
-                              }
-                           );
+                        if (var9 != KeyStore.Result.OK) {
+                           this.refundTokens(var1, var2, var5);
+                        } else {
+                           this.plugin
+                              .sync(
+                                 var1,
+                                 () -> var1.sendMessage(
+                                    this.plugin.configs().msg("crate.bought", "amount", String.valueOf(var3), "crate", var2.id(), "cost", String.valueOf(var5))
+                                 )
+                              );
+                        }
                      }
                   );
             }
          }
+      }
+   }
+
+   private void refundTokens(Player player, Crate crate, int amount) {
+      UUID id = player.getUniqueId();
+      Runnable owe = () -> this.owedTokens.merge(id, amount, Integer::sum);
+      boolean scheduled;
+      try {
+         scheduled = this.plugin.isEnabled() && player.getScheduler().run(this.plugin, task -> {
+            if (player.isOnline()) {
+               this.giveTokens(player, amount);
+               player.sendMessage(this.plugin.configs().msg("crate.save-failed", "crate", crate.id()));
+            } else {
+               owe.run();
+            }
+         }, owe) != null;
+      } catch (IllegalPluginAccessException closing) {
+         scheduled = false;
+      }
+
+      if (!scheduled) {
+         owe.run();
+      }
+   }
+
+   @EventHandler
+   public void onOwedJoin(PlayerJoinEvent event) {
+      Player player = event.getPlayer();
+      if (this.owedTokens.containsKey(player.getUniqueId())) {
+         this.plugin.tasks().runOn(player, () -> {
+            Integer owed = this.owedTokens.remove(player.getUniqueId());
+            if (owed != null && owed > 0) {
+               this.giveTokens(player, owed);
+            }
+         });
       }
    }
 

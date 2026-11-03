@@ -69,6 +69,7 @@ import io.papermc.paper.plugin.lifecycle.event.types.LifecycleEvents;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.TimeUnit;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Entity;
@@ -511,14 +512,23 @@ public final class FlameFFACore extends JavaPlugin {
    }
 
    public void async(Runnable var1) {
-      if (this.dbExecutor != null && !this.dbExecutor.isShutdown()) {
-         this.dbExecutor.execute(() -> {
+      if (this.dbExecutor != null) {
+         Runnable guarded = () -> {
             try {
                var1.run();
             } catch (Exception var3) {
                this.getSLF4JLogger().error("async task failed", var3);
             }
-         });
+         };
+         if (this.dbExecutor.isShutdown()) {
+            guarded.run();
+         } else {
+            try {
+               this.dbExecutor.execute(guarded);
+            } catch (RejectedExecutionException closing) {
+               guarded.run();
+            }
+         }
       }
    }
 

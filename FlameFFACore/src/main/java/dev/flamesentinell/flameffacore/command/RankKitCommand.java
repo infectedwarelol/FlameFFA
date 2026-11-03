@@ -58,14 +58,11 @@ public final class RankKitCommand implements BasicCommand {
       if (sender instanceof Player player) {
          Rank rank = this.rankArg(sender, args);
          if (rank != null) {
-            if (!this.plugin.kits().capture(player, rank)) {
-               sender.sendMessage(this.plugin.configs().msg("rankkit.save-failed", "rank", rank.id()));
-            } else {
-               RankKit kit = this.plugin.kits().get(rank.id());
-               int slots = kit == null ? 0 : kit.filledSlots();
-               sender.sendMessage(this.plugin.configs().msg("rankkit.set", "rank", rank.id(), "slots", String.valueOf(slots)));
-               this.plugin.async(() -> this.plugin.audit().staff(player.getUniqueId(), player.getName(), "rankkit_set", null, rank.id(), slots + " slots"));
-            }
+            this.plugin.kits().capture(player, rank);
+            RankKit kit = this.plugin.kits().get(rank.id());
+            int slots = kit == null ? 0 : kit.filledSlots();
+            sender.sendMessage(this.plugin.configs().msg("rankkit.set", "rank", rank.id(), "slots", String.valueOf(slots)));
+            this.plugin.async(() -> this.plugin.audit().staff(player.getUniqueId(), player.getName(), "rankkit_set", null, rank.id(), slots + " slots"));
          }
       } else {
          sender.sendMessage(this.plugin.configs().msg("general.players-only"));

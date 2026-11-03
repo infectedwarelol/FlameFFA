@@ -91,13 +91,15 @@ public final class CrateRegistry {
    public boolean place(String crateId, Location loc, String placedBy) {
       Crate crate = this.get(crateId);
       if (crate != null && loc.getWorld() != null) {
-         if (!this.plugin.crateBlocks().add(crate.id(), loc, placedBy)) {
-            return false;
-         } else {
-            this.putPlacement(key(loc), crate.id());
-            this.materialise(loc);
-            return true;
-         }
+         Location stored = loc.clone();
+         this.putPlacement(key(stored), crate.id());
+         this.materialise(loc);
+         this.plugin.async(() -> {
+            if (!this.plugin.crateBlocks().add(crate.id(), stored, placedBy)) {
+               this.plugin.getSLF4JLogger().error("could not save the {} crate placed at {}", crate.id(), key(stored));
+            }
+         });
+         return true;
       } else {
          return false;
       }
@@ -105,7 +107,8 @@ public final class CrateRegistry {
 
    public boolean unplace(Location loc) {
       if (loc.getWorld() != null && this.removePlacement(key(loc))) {
-         this.plugin.crateBlocks().remove(loc);
+         Location stored = loc.clone();
+         this.plugin.async(() -> this.plugin.crateBlocks().remove(stored));
          this.plugin.tasks().runAt(loc, () -> loc.getBlock().setType(Material.AIR));
          return true;
       } else {

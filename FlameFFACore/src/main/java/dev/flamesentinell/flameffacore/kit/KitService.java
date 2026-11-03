@@ -46,7 +46,7 @@ public final class KitService {
       return this.get(var1) != null;
    }
 
-   public boolean capture(Player var1, Rank var2) {
+   public void capture(Player var1, Rank var2) {
       ItemStack[] var3 = var1.getInventory().getContents();
       ItemStack[] var4 = new ItemStack[41];
 
@@ -57,26 +57,35 @@ public final class KitService {
          }
       }
 
-      boolean var7 = this.plugin.blobs().save("rankkit", var2.id(), var4, var1.getName());
-      if (var7) {
-         synchronized (this) {
-            Map<String, RankKit> var8 = new LinkedHashMap<>(this.kits);
-            var8.put(var2.id(), new RankKit(var2.id(), var4, var1.getName(), System.currentTimeMillis()));
-            this.kits = var8;
-         }
+      String var7 = var1.getName();
+      synchronized (this) {
+         Map<String, RankKit> var8 = new LinkedHashMap<>(this.kits);
+         var8.put(var2.id(), new RankKit(var2.id(), var4, var7, System.currentTimeMillis()));
+         this.kits = var8;
       }
 
-      return var7;
+      this.plugin.async(() -> {
+         if (!this.plugin.blobs().save("rankkit", var2.id(), var4, var7)) {
+            this.plugin.getSLF4JLogger().error("could not save the {} rank kit", var2.id());
+            this.plugin.sync(var1, () -> var1.sendMessage(this.plugin.configs().msg("rankkit.save-failed", "rank", var2.id())));
+         }
+      });
    }
 
    public boolean clear(String var1) {
+      boolean var3;
       synchronized (this) {
          Map<String, RankKit> var2 = new LinkedHashMap<>(this.kits);
-         var2.remove(var1);
+         var3 = var2.remove(var1) != null;
          this.kits = var2;
       }
 
-      return this.plugin.blobs().delete("rankkit", var1);
+      this.plugin.async(() -> {
+         if (!this.plugin.blobs().delete("rankkit", var1) && var3) {
+            this.plugin.getSLF4JLogger().error("could not delete the {} rank kit", var1);
+         }
+      });
+      return var3;
    }
 
    public boolean canUse(Player var1, Rank var2) {
