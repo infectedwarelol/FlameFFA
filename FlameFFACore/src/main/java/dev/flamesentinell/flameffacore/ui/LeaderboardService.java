@@ -97,18 +97,6 @@ public final class LeaderboardService {
    private void despawn() {
       this.generation.incrementAndGet();
       this.removeLive();
-      if (Tasks.FOLIA) {
-         return;
-      }
-
-      for (Object rawBoard : this.boards()) {
-         if (rawBoard instanceof Map<?, ?> map) {
-            Location at = read(map);
-            if (at != null && at.getWorld() != null) {
-               at.getWorld().setChunkForceLoaded(at.getBlockX() >> 4, at.getBlockZ() >> 4, false);
-            }
-         }
-      }
    }
 
    private List<?> boards() {
@@ -119,10 +107,12 @@ public final class LeaderboardService {
       if (!METRICS.contains(metric)) {
          return false;
       } else {
-         List<Map<?, ?>> list = new ArrayList<>(this.plugin.configs().main().getMapList("leaderboards.placed"));
-         list.add(Map.of("world", at.getWorld().getName(), "x", at.getX(), "y", at.getY(), "z", at.getZ(), "metric", metric, "size", size));
-         this.plugin.configs().main().set("leaderboards.placed", list);
-         this.save();
+         Map<String, Object> board = Map.of("world", at.getWorld().getName(), "x", at.getX(), "y", at.getY(), "z", at.getZ(), "metric", metric, "size", size);
+         this.plugin.configs().update("config.yml", cfg -> {
+            List<Map<?, ?>> list = new ArrayList<>(cfg.getMapList("leaderboards.placed"));
+            list.add(board);
+            cfg.set("leaderboards.placed", list);
+         });
          this.start();
          return true;
       }
@@ -149,19 +139,18 @@ public final class LeaderboardService {
       } else {
          Location removed = read(list.get(best));
          if (removed != null) {
-            this.plugin.tasks().runAt(removed, () -> removed.getWorld().setChunkForceLoaded(removed.getBlockX() >> 4, removed.getBlockZ() >> 4, false));
+            this.plugin.tasks().runAt(removed, () -> removed.getWorld().removePluginChunkTicket(removed.getBlockX() >> 4, removed.getBlockZ() >> 4, this.plugin));
          }
 
-         list.remove(best);
-         this.plugin.configs().main().set("leaderboards.placed", list);
-         this.save();
+         Map<?, ?> chosen = list.get(best);
+         this.plugin.configs().update("config.yml", cfg -> {
+            List<Map<?, ?>> current = new ArrayList<>(cfg.getMapList("leaderboards.placed"));
+            current.remove(chosen);
+            cfg.set("leaderboards.placed", current);
+         });
          this.start();
          return true;
       }
-   }
-
-   private void save() {
-      this.plugin.configs().saveAsync("config.yml");
    }
 
    public int count() {
@@ -208,7 +197,8 @@ public final class LeaderboardService {
                      d.addScoreboardTag("flameffacore_board");
                      d.text(this.plugin.configs().msg("leaderboard.loading"));
                   });
-                  at.getWorld().setChunkForceLoaded(at.getBlockX() >> 4, at.getBlockZ() >> 4, true);
+                  at.getWorld().setChunkForceLoaded(at.getBlockX() >> 4, at.getBlockZ() >> 4, false);
+                  at.getWorld().addPluginChunkTicket(at.getBlockX() >> 4, at.getBlockZ() >> 4, this.plugin);
                   if (current == this.generation.get() && slot < this.live.size()) {
                      this.live.set(slot, display);
                   } else {
