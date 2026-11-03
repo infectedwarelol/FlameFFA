@@ -52,8 +52,8 @@ public final class AegisWard {
    private static final double QUAD_HEIGHT = 0.275;
    private static final Key RUNE_FONT = Key.key("minecraft", "alt");
    private static final String RUNE_LETTERS = "abcdefghijklmnopqrstuvwxyz";
-   private final List<double[]> sigilPoints = new ArrayList<>();
-   private int sigilGrid = -1;
+   private volatile List<double[]> sigilPoints = List.of();
+   private volatile int sigilGrid = -1;
    private final FlameFFACore plugin;
    private final String path;
    private final Map<UUID, AegisWard.Live> live = new ConcurrentHashMap<>();
@@ -480,11 +480,14 @@ public final class AegisWard {
 
    private List<double[]> sigilPoints() {
       int grid = Math.max(8, Math.min(48, this.whole("sigil-grid", 26)));
+      return grid == this.sigilGrid ? this.sigilPoints : this.loadSigil(grid);
+   }
+
+   private synchronized List<double[]> loadSigil(int grid) {
       if (grid == this.sigilGrid) {
          return this.sigilPoints;
       } else {
-         this.sigilGrid = grid;
-         this.sigilPoints.clear();
+         List<double[]> points = new ArrayList<>();
          File file = new File(this.plugin.getDataFolder(), "sigil.png");
 
          try {
@@ -498,7 +501,7 @@ public final class AegisWard {
 
             BufferedImage image = ImageIO.read(file);
             if (image == null) {
-               return this.sigilPoints;
+               return this.publishSigil(grid, points);
             }
 
             int w = image.getWidth();
@@ -527,18 +530,25 @@ public final class AegisWard {
                   }
 
                   if (total > 0L && lit * 100L / total >= 40L) {
-                     this.sigilPoints.add(new double[]{(gx + 0.5) / grid - 0.5, 0.5 - (gy + 0.5) / grid});
+                     points.add(new double[]{(gx + 0.5) / grid - 0.5, 0.5 - (gy + 0.5) / grid});
                   }
                }
             }
 
-            this.plugin.getSLF4JLogger().info("aegis sigil sampled to {} points on a {} grid", this.sigilPoints.size(), grid);
+            this.plugin.getSLF4JLogger().info("aegis sigil sampled to {} points on a {} grid", points.size(), grid);
          } catch (IOException var23) {
             this.plugin.getSLF4JLogger().warn("could not read sigil.png, the ward has no sigil", var23);
          }
 
-         return this.sigilPoints;
+         return this.publishSigil(grid, points);
       }
+   }
+
+   private List<double[]> publishSigil(int grid, List<double[]> points) {
+      List<double[]> published = List.copyOf(points);
+      this.sigilPoints = published;
+      this.sigilGrid = grid;
+      return published;
    }
 
    public void reload() {

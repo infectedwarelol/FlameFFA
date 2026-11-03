@@ -137,7 +137,7 @@ public final class AegisShield implements CustomWeapon, Listener {
    public void onHit(EntityDamageByEntityEvent event) {
       if (!this.wards.isEmpty() && event.getEntity() instanceof Player victim && this.up(victim)) {
          Entity damager = event.getDamager();
-         Entity source = damager instanceof Projectile projectile && projectile.getShooter() instanceof Entity shooter ? shooter : damager;
+         Entity source = damager instanceof Projectile projectile && projectile.getShooter() instanceof Entity shooter && Bukkit.isOwnedByCurrentRegion(shooter) ? shooter : damager;
          if (!source.equals(victim)) {
             Vector to = source.getLocation().toVector().subtract(victim.getLocation().toVector());
             to.setY(0);

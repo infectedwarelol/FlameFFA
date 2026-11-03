@@ -4,6 +4,9 @@ import dev.flamesentinell.flameffacore.FlameFFACore;
 import io.papermc.paper.datacomponent.DataComponentTypes;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
+import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 import net.kyori.adventure.key.Key;
 import org.bukkit.Color;
 import org.bukkit.GameMode;
@@ -33,7 +36,7 @@ public final class ReaperScythe implements CustomWeapon, Listener {
     public static final String ID = "reaper-scythe";
     private static final Particle.DustOptions BLOOD = new Particle.DustOptions(Color.fromRGB(150, 12, 24), 1.1F);
     private final FlameFFACore plugin;
-    private boolean cleaving;
+    private final Set<UUID> cleaving = ConcurrentHashMap.newKeySet();
 
     public ReaperScythe(FlameFFACore plugin) {
         this.plugin = plugin;
@@ -71,8 +74,9 @@ public final class ReaperScythe implements CustomWeapon, Listener {
 
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void onHit(EntityDamageByEntityEvent event) {
-        if (cleaving || event.getCause() != DamageCause.ENTITY_ATTACK) return;
+        if (event.getCause() != DamageCause.ENTITY_ATTACK) return;
         if (!(event.getDamager() instanceof Player attacker) || !(event.getEntity() instanceof LivingEntity victim)) return;
+        if (cleaving.contains(attacker.getUniqueId())) return;
         if (!holding(attacker) || event.getFinalDamage() <= 0) return;
         if (attacker.getFallDistance() <= 1.5F || attacker.isGliding()) return;
         double heal = cfg().getDouble(path() + ".lifesteal-hearts", 4.0) * 2.0;
@@ -161,7 +165,7 @@ public final class ReaperScythe implements CustomWeapon, Listener {
             hit.add(le);
         }
         DamageSource src = DamageSource.builder(DamageType.PLAYER_ATTACK).withCausingEntity(player).withDirectEntity(player).build();
-        cleaving = true;
+        cleaving.add(player.getUniqueId());
         try {
             for (LivingEntity le : hit) {
                 if (le instanceof Player p) plugin.antiCheat().open(p, 40);
@@ -170,7 +174,7 @@ public final class ReaperScythe implements CustomWeapon, Listener {
                 if (kb.lengthSquared() > 1.0E-4) le.setVelocity(le.getVelocity().add(kb.normalize().multiply(push).setY(0.25)));
             }
         } finally {
-            cleaving = false;
+            cleaving.remove(player.getUniqueId());
         }
         player.swingMainHand();
         World world = player.getWorld();

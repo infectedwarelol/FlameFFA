@@ -105,7 +105,7 @@ public final class TetherTrident implements CustomWeapon, Listener {
       double var10 = var3;
 
       for (Player var13 : var1.getWorld().getPlayers()) {
-         if (!var13.equals(var1) && !var13.isDead() && var13.getGameMode() != GameMode.SPECTATOR && var1.canSee(var13)) {
+         if (!var13.equals(var1) && Bukkit.isOwnedByCurrentRegion(var13) && !var13.isDead() && var13.getGameMode() != GameMode.SPECTATOR && var1.canSee(var13)) {
             Vector var14 = var13.getLocation().add(0.0, var13.getHeight() * 0.6, 0.0).toVector().subtract(var7.toVector());
             double var15 = var14.length();
             if (!(var15 < 0.5) && !(var15 > var5)) {
@@ -173,7 +173,9 @@ public final class TetherTrident implements CustomWeapon, Listener {
       if (var2 != null) {
          Player var3 = Bukkit.getPlayer(var2);
          if (var3 != null) {
-            if (var1.getHitEntity() instanceof Player var4
+            boolean var5 = Bukkit.isOwnedByCurrentRegion(var3);
+            if (var5
+               && var1.getHitEntity() instanceof Player var4
                && !var4.equals(var3)
                && !shielded(var4, var1.getEntity())
                && !this.inSpawn(var4)
@@ -183,7 +185,7 @@ public final class TetherTrident implements CustomWeapon, Listener {
             }
 
             this.plugin.weapons().startCooldownSeconds(var3, this, this.plugin.configs().main().getInt(this.path() + ".miss-cooldown-seconds", 8));
-            var3.playSound(var3.getLocation(), Sound.ENTITY_ITEM_BREAK, 0.7F, 1.4F);
+            this.plugin.tasks().runOn(var3, () -> var3.playSound(var3.getLocation(), Sound.ENTITY_ITEM_BREAK, 0.7F, 1.4F));
          }
       }
    }
@@ -199,7 +201,11 @@ public final class TetherTrident implements CustomWeapon, Listener {
       var5.target = var2.getUniqueId();
       var5.endsAt = Bukkit.getCurrentTick() + var4 * 20;
       var5.yanksLeft = Math.max(1, var3.getInt(this.path() + ".max-yanks", 3));
-      this.tethers.put(var1.getUniqueId(), var5);
+      TetherTrident.Tether var6 = this.tethers.put(var1.getUniqueId(), var5);
+      if (var6 != null && var6.chain != null) {
+         var6.chain.cancel();
+      }
+
       this.plugin.weapons().startCooldown(var1, this, null);
       this.chain.attach(var1, var2);
       this.plugin.cooldownBar().flash(var1, this.plugin.configs().msg("weapon.tether-attached", "player", var2.getName()));
@@ -266,15 +272,13 @@ public final class TetherTrident implements CustomWeapon, Listener {
                if (var5 >= var3.nextYank) {
                   Player var6 = Bukkit.getPlayer(var3.target);
                   if (var6 != null && Bukkit.isOwnedByCurrentRegion(var6) && !this.inSpawn(var6) && !this.inSpawn(var2)) {
-                     if (var6 != null) {
-                        FileConfiguration var7 = this.plugin.configs().main();
-                        var3.nextYank = var5 + Math.max(4, var7.getInt(this.path() + ".yank-cooldown-ticks", 30));
-                        if (--var3.yanksLeft <= 0) {
-                           this.reel(var2, var6, var2.isSneaking());
-                           this.release(var2, "spent");
-                        } else {
-                           this.reel(var2, var6, var2.isSneaking());
-                        }
+                     FileConfiguration var7 = this.plugin.configs().main();
+                     var3.nextYank = var5 + Math.max(4, var7.getInt(this.path() + ".yank-cooldown-ticks", 30));
+                     if (--var3.yanksLeft <= 0) {
+                        this.reel(var2, var6, var2.isSneaking());
+                        this.release(var2, "spent");
+                     } else {
+                        this.reel(var2, var6, var2.isSneaking());
                      }
                   } else {
                      this.release(var2, "gone");
@@ -307,7 +311,7 @@ public final class TetherTrident implements CustomWeapon, Listener {
       this.stopDrag(var10);
       int[] var11 = new int[]{var9};
       ScheduledTask var13 = this.plugin.tasks().entityTimer(var1, task -> {
-         if (--var11[0] >= 0 && var1.isOnline() && !var1.isDead() && var2.isOnline() && var2.getWorld().equals(var1.getWorld())) {
+         if (--var11[0] >= 0 && var1.isOnline() && !var1.isDead() && var2.isOnline() && Bukkit.isOwnedByCurrentRegion(var2) && var2.getWorld().equals(var1.getWorld())) {
             Vector var11x = var2.getLocation().add(0.0, 0.8, 0.0).toVector().subtract(var1.getLocation().toVector());
             if (!(var11x.length() <= var7) && !this.inSpawn(var1) && !this.inSpawn(var2)) {
                Vector var12 = var11x.normalize().multiply(var3);

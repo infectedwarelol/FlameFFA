@@ -261,8 +261,9 @@ public final class RocketMace implements CustomWeapon, Listener {
    }
 
    private void giveBack(RocketMace.Flight var1) {
-      if (var1.display != null && var1.display.isValid()) {
-         var1.display.remove();
+      ItemDisplay var7 = var1.display;
+      if (var7 != null && var7.isValid()) {
+         this.plugin.tasks().runOn(var7, var7::remove);
       }
 
       Player var2 = Bukkit.getPlayer(var1.owner);
@@ -380,7 +381,7 @@ public final class RocketMace implements CustomWeapon, Listener {
 
             var4 = (RocketMace.Flight)var25.getValue();
             var5 = Bukkit.getPlayer(var4.owner);
-            if (var5 != null && var4.display != null && var4.display.isValid() && var5.getWorld() == var4.at.getWorld()) {
+            if (var5 != null && var4.display != null && var4.display.isValid() && var5.getWorld() == var4.at.getWorld() && Bukkit.isOwnedByCurrentRegion(var4.at)) {
                var4.age++;
                if (!var4.back) {
                   Location var19 = var4.at.clone();
@@ -457,6 +458,10 @@ public final class RocketMace implements CustomWeapon, Listener {
 
    @Override
    public void tick(FlameFFACore var1) {
+      if (!this.passiveReady.isEmpty()) {
+         int var2 = Bukkit.getCurrentTick();
+         this.passiveReady.values().removeIf(var1x -> var1x <= var2);
+      }
    }
 
    private void ensureTicker(Player player) {

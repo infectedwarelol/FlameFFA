@@ -109,18 +109,16 @@ public final class OverkillMace implements CustomWeapon, Listener {
                   int window = Math.max(1, cfg.getInt(this.path() + ".stack-window-seconds", 6)) * 20;
                   int need = Math.max(1, cfg.getInt(this.path() + ".stacks-needed", 5));
                   OverkillMace.State state = this.states.computeIfAbsent(attacker.getUniqueId(), k -> new OverkillMace.State());
-                  synchronized (state) {
-                     if (state.stackUntil <= now) {
-                        state.stacks = 0;
-                     }
+                  if (state.stackUntil <= now) {
+                     state.stacks = 0;
+                  }
 
-                     state.stacks++;
-                     state.stackUntil = now + window;
-                     if (state.stacks >= need) {
-                        this.engage(attacker, state, mace);
-                     } else {
-                        this.fx.stack(attacker, victim, state.stacks, need);
-                     }
+                  state.stacks++;
+                  state.stackUntil = now + window;
+                  if (state.stacks >= need) {
+                     this.engage(attacker, state, mace);
+                  } else {
+                     this.fx.stack(attacker, victim, state.stacks, need);
                   }
                }
             }
