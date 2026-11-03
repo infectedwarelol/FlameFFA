@@ -280,6 +280,10 @@ public final class FlameFFACore extends JavaPlugin {
          var4.chain().shutdown();
       }
 
+      if (this.weaponRegistry != null) {
+         this.weaponRegistry.shutdown();
+      }
+
       if (this.weaponRegistry != null && this.weaponRegistry.get("stun-mace") instanceof StunMace var5) {
          var5.shutdown();
       }

@@ -255,6 +255,21 @@ public final class WeaponRegistry implements Listener {
       }
    }
 
+   public void shutdown() {
+      for (UUID uuid : new ArrayList<>(this.holds.keySet())) {
+         Player player = Bukkit.getPlayer(uuid);
+         if (player == null) {
+            this.holds.remove(uuid);
+         } else {
+            try {
+               this.dropHold(player, false);
+            } catch (RuntimeException offThread) {
+               this.plugin.getSLF4JLogger().warn("could not release the held weapon of {}", player.getName());
+            }
+         }
+      }
+   }
+
    private void dropHold(Player var1, boolean var2) {
       WeaponRegistry.Hold var3 = this.holds.remove(var1.getUniqueId());
       if (var3 != null) {
