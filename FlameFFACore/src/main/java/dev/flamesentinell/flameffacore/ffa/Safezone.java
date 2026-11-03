@@ -4,7 +4,6 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ConcurrentHashMap;
 import dev.flamesentinell.flameffacore.FlameFFACore;
 import dev.flamesentinell.flameffacore.util.Bots;
-import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
@@ -85,45 +84,32 @@ public final class Safezone {
    }
 
    public boolean define(World w, int x1, int y1, int z1, int x2, int y2, int z2) {
-      FileConfiguration cfg = this.plugin.configs().main();
-      cfg.set("arena.safezone.world", w.getName());
-      cfg.set("arena.safezone.x1", x1);
-      cfg.set("arena.safezone.y1", y1);
-      cfg.set("arena.safezone.z1", z1);
-      cfg.set("arena.safezone.x2", x2);
-      cfg.set("arena.safezone.y2", y2);
-      cfg.set("arena.safezone.z2", z2);
-      if (!this.save(cfg)) {
-         return false;
-      } else {
-         this.load();
-         return true;
-      }
+      this.plugin.configs().update("config.yml", cfg -> {
+         cfg.set("arena.safezone.world", w.getName());
+         cfg.set("arena.safezone.x1", x1);
+         cfg.set("arena.safezone.y1", y1);
+         cfg.set("arena.safezone.z1", z1);
+         cfg.set("arena.safezone.x2", x2);
+         cfg.set("arena.safezone.y2", y2);
+         cfg.set("arena.safezone.z2", z2);
+      });
+      this.load();
+      return true;
    }
 
    public boolean clear() {
-      FileConfiguration cfg = this.plugin.configs().main();
-      cfg.set("arena.safezone", null);
-      if (!this.save(cfg)) {
-         return false;
-      } else {
-         List<PotionEffect> applied = List.copyOf(this.effects);
+      this.plugin.configs().update("config.yml", cfg -> cfg.set("arena.safezone", null));
+      List<PotionEffect> applied = List.copyOf(this.effects);
 
-         for (UUID uuid : new ArrayList<>(this.inside)) {
-            Player p = this.plugin.getServer().getPlayer(uuid);
-            if (p != null) {
-               this.plugin.tasks().runOn(p, () -> strip(p, applied));
-            }
+      for (UUID uuid : new ArrayList<>(this.inside)) {
+         Player p = this.plugin.getServer().getPlayer(uuid);
+         if (p != null) {
+            this.plugin.tasks().runOn(p, () -> strip(p, applied));
          }
-
-         this.inside.clear();
-         this.load();
-         return true;
       }
-   }
 
-   private boolean save(FileConfiguration cfg) {
-      this.plugin.configs().saveAsync(cfg, new File(this.plugin.getDataFolder(), "config.yml"));
+      this.inside.clear();
+      this.load();
       return true;
    }
 

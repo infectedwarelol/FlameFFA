@@ -25,7 +25,6 @@ import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.command.CommandSender;
-import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.persistence.PersistentDataType;
@@ -108,15 +107,14 @@ public final class AdminCommand implements BasicCommand {
    private void setSpawn(CommandSender sender) {
       if (sender instanceof Player player) {
          Location at = player.getLocation();
-         FileConfiguration cfg = this.plugin.configs().main();
-         cfg.set("arena.world", at.getWorld().getName());
-         cfg.set("arena.spawn.x", Math.round(at.getX() * 100.0) / 100.0);
-         cfg.set("arena.spawn.y", Math.round(at.getY() * 100.0) / 100.0);
-         cfg.set("arena.spawn.z", Math.round(at.getZ() * 100.0) / 100.0);
-         cfg.set("arena.spawn.yaw", Math.round(at.getYaw()));
-         cfg.set("arena.spawn.pitch", Math.round(at.getPitch()));
-
-         this.plugin.configs().saveAsync("config.yml");
+         this.plugin.configs().update("config.yml", cfg -> {
+            cfg.set("arena.world", at.getWorld().getName());
+            cfg.set("arena.spawn.x", Math.round(at.getX() * 100.0) / 100.0);
+            cfg.set("arena.spawn.y", Math.round(at.getY() * 100.0) / 100.0);
+            cfg.set("arena.spawn.z", Math.round(at.getZ() * 100.0) / 100.0);
+            cfg.set("arena.spawn.yaw", Math.round(at.getYaw()));
+            cfg.set("arena.spawn.pitch", Math.round(at.getPitch()));
+         });
 
          this.audit(sender, "setspawn", at.getWorld().getName(), at.getBlockX() + " " + at.getBlockY() + " " + at.getBlockZ());
          sender.sendMessage(

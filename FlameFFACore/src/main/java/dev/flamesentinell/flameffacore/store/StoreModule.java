@@ -17,6 +17,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
 import java.util.UUID;
+import java.util.function.Consumer;
 import java.util.regex.Pattern;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.event.ClickEvent;
@@ -29,6 +30,7 @@ import org.bukkit.OfflinePlayer;
 import org.bukkit.World;
 import org.bukkit.command.CommandSender;
 import org.bukkit.configuration.file.FileConfiguration;
+import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.entity.Player;
 import org.bukkit.event.HandlerList;
 import org.bukkit.inventory.ItemStack;
@@ -161,8 +163,8 @@ public final class StoreModule implements Module {
       return this.config.get();
    }
 
-   void saveConfig() {
-      this.config.saveAsync();
+   void updateConfig(Consumer<YamlConfiguration> edit) {
+      this.config.update(edit);
    }
 
    private List<StoreNpc> npcs() {
@@ -337,8 +339,7 @@ public final class StoreModule implements Module {
    }
 
    private void applyTag(CommandSender sender, String name, UUID uuid, String tag) {
-      this.plugin.configs().ranks().set("custom-tags." + uuid, tag);
-      this.plugin.configs().saveAsync("ranks.yml");
+      this.plugin.configs().update("ranks.yml", cfg -> cfg.set("custom-tags." + uuid, tag));
       this.plugin.hud().refreshTabList();
       this.plugin.getSLF4JLogger().info("{} set the custom tag of {} to {}", sender.getName(), name, tag == null ? "nothing" : tag);
       sender.sendMessage(

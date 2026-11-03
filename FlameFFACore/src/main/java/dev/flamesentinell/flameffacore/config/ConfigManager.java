@@ -9,11 +9,13 @@ import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Consumer;
 import java.nio.file.AtomicMoveNotSupportedException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import net.kyori.adventure.text.Component;
+import org.bukkit.configuration.InvalidConfigurationException;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.configuration.file.YamlConfiguration;
 
@@ -142,6 +144,7 @@ public final class ConfigManager {
    );
    private final FlameFFACore plugin;
    private final Map<String, FileConfiguration> loaded = new ConcurrentHashMap<>();
+   private final Object updateLock = new Object();
 
    public ConfigManager(FlameFFACore plugin) {
       this.plugin = plugin;
@@ -258,6 +261,30 @@ public final class ConfigManager {
 
    public FileConfiguration chat() {
       return this.get("chat.yml");
+   }
+
+   public static YamlConfiguration copyOf(FileConfiguration source) {
+      YamlConfiguration copy = new YamlConfiguration();
+      try {
+         copy.loadFromString(source.saveToString());
+      } catch (InvalidConfigurationException unreadable) {
+         throw new IllegalStateException("could not copy config", unreadable);
+      }
+
+      if (source.getDefaults() != null) {
+         copy.setDefaults(source.getDefaults());
+      }
+
+      return copy;
+   }
+
+   public void update(String name, Consumer<YamlConfiguration> edit) {
+      synchronized (this.updateLock) {
+         YamlConfiguration copy = copyOf(this.get(name));
+         edit.accept(copy);
+         this.loaded.put(name, copy);
+         this.saveAsync(copy, new File(this.plugin.getDataFolder(), name));
+      }
    }
 
    public void saveAsync(FileConfiguration cfg, File file) {

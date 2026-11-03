@@ -1,12 +1,14 @@
 package dev.flamesentinell.flameffacore.module;
 
 import dev.flamesentinell.flameffacore.FlameFFACore;
+import dev.flamesentinell.flameffacore.config.ConfigManager;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
+import java.util.function.Consumer;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.configuration.file.YamlConfiguration;
 
@@ -16,6 +18,7 @@ public final class ModuleConfig {
    private final File file;
    private final File legacy;
    private volatile YamlConfiguration config = new YamlConfiguration();
+   private final Object updateLock = new Object();
 
    public ModuleConfig(FlameFFACore plugin, String name, String legacyPlugin, String legacyName) {
       this.plugin = plugin;
@@ -73,7 +76,12 @@ public final class ModuleConfig {
       return this.file;
    }
 
-   public void saveAsync() {
-      this.plugin.configs().saveAsync(this.config, this.file);
+   public void update(Consumer<YamlConfiguration> edit) {
+      synchronized (this.updateLock) {
+         YamlConfiguration copy = ConfigManager.copyOf(this.config);
+         edit.accept(copy);
+         this.config = copy;
+         this.plugin.configs().saveAsync(copy, this.file);
+      }
    }
 }

@@ -198,13 +198,13 @@ final class StoreNpc implements Listener {
    }
 
    void place(Location at) {
-      FileConfiguration cfg = this.cfg();
-      cfg.set(this.path + ".location.world", at.getWorld().getName());
-      cfg.set(this.path + ".location.x", at.getX());
-      cfg.set(this.path + ".location.y", at.getY());
-      cfg.set(this.path + ".location.z", at.getZ());
-      cfg.set(this.path + ".location.yaw", at.getYaw());
-      this.store.saveConfig();
+      this.store.updateConfig(cfg -> {
+         cfg.set(this.path + ".location.world", at.getWorld().getName());
+         cfg.set(this.path + ".location.x", at.getX());
+         cfg.set(this.path + ".location.y", at.getY());
+         cfg.set(this.path + ".location.z", at.getZ());
+         cfg.set(this.path + ".location.yaw", at.getYaw());
+      });
       this.despawn();
       this.where = at.clone();
       this.spawn();
@@ -214,8 +214,7 @@ final class StoreNpc implements Listener {
       this.despawn();
       this.sweep();
       this.where = null;
-      this.cfg().set(this.path + ".location", null);
-      this.store.saveConfig();
+      this.store.updateConfig(cfg -> cfg.set(this.path + ".location", null));
    }
 
    void refresh() {

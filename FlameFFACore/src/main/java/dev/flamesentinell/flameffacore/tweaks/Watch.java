@@ -723,8 +723,7 @@ final class Watch implements Listener {
                this.stopWatching(target, "removed");
             }
 
-            this.tweaks.cfg().set("watch-players", names);
-            this.tweaks.saveConfig();
+            this.tweaks.updateConfig(cfg -> cfg.set("watch-players", names));
             sender.sendMessage((adding ? "now watching " : "stopped watching ") + name + (target != null && adding ? "  recording" : ""));
          } else {
             sender.sendMessage("/watch add|remove|list <player>");
