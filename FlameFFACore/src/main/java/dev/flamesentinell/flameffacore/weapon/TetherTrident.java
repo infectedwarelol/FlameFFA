@@ -227,7 +227,7 @@ public final class TetherTrident implements CustomWeapon, Listener {
                Location var5 = var3.getLocation().add(0.0, 1.0, 0.0);
                double var6 = this.plugin.configs().main().getDouble(this.path() + ".range", 75.0);
                double var8 = var4.distance(var5);
-               if (var8 > var6) {
+               if (var8 > var6 || !this.chain.owned(var1.getWorld(), var4, var5)) {
                   this.release(var1, "snapped");
                } else {
                   this.chain.draw(var1, var4, var5);

@@ -64,6 +64,27 @@ public final class TetherChain {
       return Bukkit.getCurrentTick() < ward.tautUntil ? 0.0 : Math.min(this.num("max-sag", 2.5), distance * this.num("sag-per-block", 0.06));
    }
 
+   public boolean owned(World world, Location from, Location to) {
+      if (!Tasks.FOLIA) {
+         return true;
+      } else {
+         double dx = to.getX() - from.getX();
+         double dz = to.getZ() - from.getZ();
+         int steps = Math.max(1, (int)Math.ceil(Math.sqrt(dx * dx + dz * dz) / 8.0));
+
+         for (int i = 0; i <= steps; i++) {
+            double t = (double)i / steps;
+            int chunkX = (int)Math.floor(from.getX() + dx * t) >> 4;
+            int chunkZ = (int)Math.floor(from.getZ() + dz * t) >> 4;
+            if (!Bukkit.isOwnedByCurrentRegion(world, chunkX, chunkZ)) {
+               return false;
+            }
+         }
+
+         return true;
+      }
+   }
+
    public void draw(Player caster, Location from, Location to) {
       TetherChain.Live ward = this.live.computeIfAbsent(caster.getUniqueId(), k -> new TetherChain.Live());
       World world = caster.getWorld();
@@ -229,7 +250,7 @@ public final class TetherChain {
    public void release(Player caster, Location from, Location to, boolean hard) {
       TetherChain.Live ward = this.live.remove(caster.getUniqueId());
       World world = caster.getWorld();
-      if (from != null && to != null) {
+      if (from != null && to != null && this.owned(world, from, to)) {
          Vector a = from.toVector();
          Vector b = to.toVector();
          double distance = a.distance(b);
