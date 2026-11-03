@@ -7,6 +7,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Collections;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.IntConsumer;
@@ -37,6 +38,7 @@ public final class CosmeticService implements Listener {
    private final FlameFFACore plugin;
    private volatile Map<String, List<CosmeticService.Cosmetic>> catalogue = Map.of();
    private final Map<UUID, Map<String, String>> chosen = new ConcurrentHashMap<>();
+   private final Map<UUID, Set<String>> touchedWhileLoading = new ConcurrentHashMap<>();
    private boolean enabled = true;
    private int auraStreak = 5;
 
@@ -113,6 +115,11 @@ public final class CosmeticService implements Listener {
    public void pick(Player player, String slot, String id) {
       UUID uuid = player.getUniqueId();
       Map<String, String> mine = this.chosen.computeIfAbsent(uuid, k -> new ConcurrentHashMap<>());
+      Set<String> touched = this.touchedWhileLoading.get(uuid);
+      if (touched != null) {
+         touched.add(slot);
+      }
+
       if (id == null) {
          mine.remove(slot);
       } else {
@@ -126,11 +133,17 @@ public final class CosmeticService implements Listener {
    public void onJoin(PlayerJoinEvent event) {
       if (!Bots.is(event.getPlayer())) {
          UUID uuid = event.getPlayer().getUniqueId();
+         Set<String> touched = ConcurrentHashMap.newKeySet();
+         this.touchedWhileLoading.put(uuid, touched);
          this.plugin.async(() -> {
-            Map<String, String> saved = this.plugin.cosmeticStore().load(uuid);
-            if (Bukkit.getPlayer(uuid) != null) {
-               Map<String, String> mine = this.chosen.computeIfAbsent(uuid, k -> new ConcurrentHashMap<>());
-               saved.forEach(mine::putIfAbsent);
+            try {
+               Map<String, String> saved = this.plugin.cosmeticStore().load(uuid);
+               if (Bukkit.getPlayer(uuid) != null && this.touchedWhileLoading.get(uuid) == touched) {
+                  Map<String, String> mine = this.chosen.computeIfAbsent(uuid, k -> new ConcurrentHashMap<>());
+                  saved.forEach((slot, id) -> mine.compute(slot, (key, current) -> current != null || touched.contains(key) ? current : id));
+               }
+            } finally {
+               this.touchedWhileLoading.remove(uuid, touched);
             }
          });
       }
@@ -139,6 +152,7 @@ public final class CosmeticService implements Listener {
    @EventHandler
    public void onQuit(PlayerQuitEvent event) {
       this.chosen.remove(event.getPlayer().getUniqueId());
+      this.touchedWhileLoading.remove(event.getPlayer().getUniqueId());
    }
 
    public void onKill(Player killer, Location at) {
