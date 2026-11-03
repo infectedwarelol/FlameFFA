@@ -107,10 +107,12 @@ public final class Safezone {
       if (!this.save(cfg)) {
          return false;
       } else {
+         List<PotionEffect> applied = List.copyOf(this.effects);
+
          for (UUID uuid : new ArrayList<>(this.inside)) {
             Player p = this.plugin.getServer().getPlayer(uuid);
             if (p != null) {
-               this.plugin.tasks().runOn(p, () -> this.strip(p));
+               this.plugin.tasks().runOn(p, () -> strip(p, applied));
             }
          }
 
@@ -137,7 +139,7 @@ public final class Safezone {
                }
             }
          } else if (this.inside.remove(uuid)) {
-            this.strip(player);
+            strip(player, this.effects);
          }
       }
    }
@@ -146,8 +148,8 @@ public final class Safezone {
       this.inside.remove(uuid);
    }
 
-   private void strip(Player player) {
-      for (PotionEffect effect : this.effects) {
+   private static void strip(Player player, List<PotionEffect> applied) {
+      for (PotionEffect effect : applied) {
          player.removePotionEffect(effect.getType());
       }
    }

@@ -355,7 +355,9 @@ public final class ArenaService implements Listener {
                   }
                }
 
-               var12.setHealth(Math.min(var12.getMaxHealth(), var12.getHealth() + 4.0));
+               if (!var12.isDead()) {
+                  var12.setHealth(Math.min(var12.getMaxHealth(), var12.getHealth() + 4.0));
+               }
             });
             if (var11 >= 5) {
                Bukkit.broadcast(

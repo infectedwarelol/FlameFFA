@@ -27,7 +27,10 @@ public final class KitService {
    public void load() {
       Map<String, RankKit> var1 = new LinkedHashMap<>();
       this.plugin.blobs().loadAll("rankkit").forEach((var2, var3) -> var1.put(var2, new RankKit(var2, var3.contents(), var3.setBy(), var3.setAt())));
-      this.kits = var1;
+      synchronized (this) {
+         this.kits = var1;
+      }
+
       this.plugin.getSLF4JLogger().info("loaded {} rank kits", var1.size());
    }
 

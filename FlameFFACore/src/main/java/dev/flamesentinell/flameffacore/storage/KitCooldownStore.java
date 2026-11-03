@@ -36,12 +36,22 @@ public final class KitCooldownStore {
       } catch (SQLException var16) {
       }
 
-      Map<String, Long> current = this.cache.computeIfAbsent(uuid, k -> new ConcurrentHashMap<>());
-      mine.forEach((rankId, until) -> current.merge(rankId, until, Math::max));
+      this.cache.compute(uuid, (key, current) -> {
+         Map<String, Long> merged = current == null ? new ConcurrentHashMap<>() : current;
+         mine.forEach((rankId, until) -> merged.merge(rankId, until, Math::max));
+         return merged;
+      });
    }
 
    public void forget(UUID uuid) {
       long now = System.currentTimeMillis();
+
+      for (UUID cached : this.cache.keySet()) {
+         this.dropExpired(cached, now);
+      }
+   }
+
+   private void dropExpired(UUID uuid, long now) {
       this.cache.computeIfPresent(uuid, (key, mine) -> {
          mine.values().removeIf(until -> until <= now);
          return mine.isEmpty() ? null : mine;
@@ -73,7 +83,11 @@ public final class KitCooldownStore {
          return 0L;
       } else {
          long until = System.currentTimeMillis() + seconds * 1000L;
-         this.cache.computeIfAbsent(uuid, k -> new ConcurrentHashMap<>()).put(rankId, until);
+         this.cache.compute(uuid, (key, current) -> {
+            Map<String, Long> mine = current == null ? new ConcurrentHashMap<>() : current;
+            mine.put(rankId, until);
+            return mine;
+         });
          return until;
       }
    }
