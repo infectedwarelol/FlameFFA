@@ -1,6 +1,7 @@
 package dev.flamesentinell.flameffacore.ffa;
 
 import dev.flamesentinell.flameffacore.FlameFFACore;
+import dev.flamesentinell.flameffacore.util.Tasks;
 import java.io.File;
 import java.nio.file.Files;
 import java.nio.file.StandardCopyOption;
@@ -103,7 +104,11 @@ public final class OfflineInvsee implements Listener {
          UUID var4 = var3.getUniqueId();
          Inventory var5 = this.open.get(var4);
          if (var5 != null) {
-            var1.openInventory(var5);
+            if (Tasks.viewedFromOtherRegion(var5, null)) {
+               say(var1, "<red>Someone in another area is using that inventory, try again soon.");
+            } else {
+               var1.openInventory(var5);
+            }
          } else {
             File var6 = this.file(var4);
             String var19 = var3.getName() != null ? var3.getName() : var8;
@@ -137,7 +142,11 @@ public final class OfflineInvsee implements Listener {
                         }
                      }
 
-                     var1.openInventory(var20);
+                     if (Tasks.viewedFromOtherRegion(var20, null)) {
+                        say(var1, "<red>Someone in another area is using that inventory, try again soon.");
+                     } else {
+                        var1.openInventory(var20);
+                     }
                   }
                });
             });

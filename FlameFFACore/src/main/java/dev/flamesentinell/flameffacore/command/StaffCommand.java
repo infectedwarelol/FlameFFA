@@ -2,6 +2,7 @@ package dev.flamesentinell.flameffacore.command;
 
 import dev.flamesentinell.flameffacore.FlameFFACore;
 import dev.flamesentinell.flameffacore.staff.StaffRole;
+import dev.flamesentinell.flameffacore.util.Tasks;
 import io.papermc.paper.command.brigadier.BasicCommand;
 import io.papermc.paper.command.brigadier.CommandSourceStack;
 import java.util.ArrayList;
@@ -69,6 +70,11 @@ public final class StaffCommand implements BasicCommand {
 
                Player target = this.target(sender, args, 1);
                if (target == null) {
+                  return;
+               }
+
+               if (Tasks.viewedFromOtherRegion(target.getInventory(), target)) {
+                  sender.sendMessage("that player is too far away to view right now");
                   return;
                }
 

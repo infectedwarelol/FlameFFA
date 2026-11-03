@@ -7,6 +7,7 @@ import dev.flamesentinell.flameffacore.ffa.OfflineInvsee;
 import dev.flamesentinell.flameffacore.module.Module;
 import dev.flamesentinell.flameffacore.module.ModuleCommand;
 import dev.flamesentinell.flameffacore.module.ModuleConfig;
+import dev.flamesentinell.flameffacore.util.Tasks;
 import io.papermc.paper.ban.BanListType;
 import io.papermc.paper.command.brigadier.Commands;
 import io.papermc.paper.event.player.AsyncChatEvent;
@@ -20,6 +21,8 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Consumer;
 import net.kyori.adventure.text.Component;
+import net.luckperms.api.LuckPermsProvider;
+import net.luckperms.api.cacheddata.CachedPermissionData;
 import net.kyori.adventure.text.minimessage.MiniMessage;
 import net.kyori.adventure.text.minimessage.tag.resolver.Placeholder;
 import org.bukkit.Bukkit;
@@ -30,6 +33,7 @@ import org.bukkit.ban.ProfileBanList;
 import org.bukkit.block.Block;
 import org.bukkit.command.CommandSender;
 import org.bukkit.configuration.file.FileConfiguration;
+import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.entity.Player;
 import org.bukkit.event.Event.Result;
 import org.bukkit.event.EventHandler;
@@ -169,8 +173,8 @@ public final class TweaksModule implements Module, Listener {
       return this.config.get();
    }
 
-   void saveConfig() {
-      this.config.saveAsync();
+   void updateConfig(Consumer<YamlConfiguration> edit) {
+      this.config.update(edit);
    }
 
    @EventHandler(
@@ -218,7 +222,7 @@ public final class TweaksModule implements Module, Listener {
             } else {
                OfflineInvsee.openOffline(viewer, args[0]);
             }
-         } else if (!Bukkit.isOwnedByCurrentRegion(target)) {
+         } else if (!Bukkit.isOwnedByCurrentRegion(target) || Tasks.viewedFromOtherRegion(enderChest ? target.getEnderChest() : target.getInventory(), target)) {
             sender.sendMessage("that player is too far away to view right now");
          } else if (viewer.openInventory(enderChest ? target.getEnderChest() : target.getInventory()) != null) {
             this.peeking.add(viewer.getUniqueId());
@@ -336,32 +340,51 @@ public final class TweaksModule implements Module, Listener {
          sender.sendMessage(MM.deserialize("<red>You can't ban yourself."));
       } else {
          Player online = target.getPlayer();
-         if (online != null
-            && (online.hasPermission("flametweaks.ban") || online.hasPermission("flametweaks.tempban.limited"))
-            && !sender.hasPermission("flametweaks.ban.override")) {
-            sender.sendMessage(MM.deserialize("<red>You can't ban another staff member."));
-         } else {
-            Date until = temporary ? new Date(System.currentTimeMillis() + days * 86400000L) : null;
-            String length = temporary ? days + (days == 1 ? " day" : " days") : "permanently";
-            ((ProfileBanList)Bukkit.getBanList(BanListType.PROFILE)).addBan(target.getPlayerProfile(), reason, until, sender.getName());
-            String appeal = this.cfg().getString("ban-appeal", "");
-            if (online != null) {
-               Component screen = MM.deserialize(
-                  "<red><bold>You are banned "
-                     + (temporary ? "for " : "")
-                     + length
-                     + "</bold>\n<gray>Reason: <white>"
-                     + escape(reason)
-                     + (appeal.isBlank() ? "" : "\n<gray>Appeal: <white>" + escape(appeal))
-               );
-               this.plugin.tasks().runOn(online, () -> online.kick(screen));
+         if (sender.hasPermission("flametweaks.ban.override")) {
+            this.executeBan(sender, typed, target, online, reason, temporary, days);
+         } else if (online != null) {
+            if (online.hasPermission("flametweaks.ban") || online.hasPermission("flametweaks.tempban.limited")) {
+               sender.sendMessage(MM.deserialize("<red>You can't ban another staff member."));
+            } else {
+               this.executeBan(sender, typed, target, online, reason, temporary, days);
             }
-
-            String shown = target.getName() != null ? target.getName() : typed;
-            this.plugin.getSLF4JLogger().info("{} banned {} {}  reason {}", sender.getName(), shown, length, reason);
-            this.notifyStaff("<red>" + escape(sender.getName()) + " banned " + escape(shown) + " " + length + "<gray>: " + escape(reason));
+         } else {
+            LuckPermsProvider.get().getUserManager().loadUser(target.getUniqueId()).whenComplete((user, failure) -> this.plugin.sync(() -> {
+               if (failure != null || user == null) {
+                  sender.sendMessage(MM.deserialize("<red>Could not check that player's permissions, try again."));
+               } else {
+                  CachedPermissionData permissions = user.getCachedData().getPermissionData();
+                  if (permissions.checkPermission("flametweaks.ban").asBoolean() || permissions.checkPermission("flametweaks.tempban.limited").asBoolean()) {
+                     sender.sendMessage(MM.deserialize("<red>You can't ban another staff member."));
+                  } else {
+                     this.executeBan(sender, typed, target, target.getPlayer(), reason, temporary, days);
+                  }
+               }
+            }));
          }
       }
+   }
+
+   private void executeBan(CommandSender sender, String typed, OfflinePlayer target, Player online, String reason, boolean temporary, int days) {
+      Date until = temporary ? new Date(System.currentTimeMillis() + days * 86400000L) : null;
+      String length = temporary ? days + (days == 1 ? " day" : " days") : "permanently";
+      ((ProfileBanList)Bukkit.getBanList(BanListType.PROFILE)).addBan(target.getPlayerProfile(), reason, until, sender.getName());
+      String appeal = this.cfg().getString("ban-appeal", "");
+      if (online != null) {
+         Component screen = MM.deserialize(
+            "<red><bold>You are banned "
+               + (temporary ? "for " : "")
+               + length
+               + "</bold>\n<gray>Reason: <white>"
+               + escape(reason)
+               + (appeal.isBlank() ? "" : "\n<gray>Appeal: <white>" + escape(appeal))
+         );
+         this.plugin.tasks().runOn(online, () -> online.kick(screen));
+      }
+
+      String shown = target.getName() != null ? target.getName() : typed;
+      this.plugin.getSLF4JLogger().info("{} banned {} {}  reason {}", sender.getName(), shown, length, reason);
+      this.notifyStaff("<red>" + escape(sender.getName()) + " banned " + escape(shown) + " " + length + "<gray>: " + escape(reason));
    }
 
    private boolean unban(CommandSender sender, String[] args) {

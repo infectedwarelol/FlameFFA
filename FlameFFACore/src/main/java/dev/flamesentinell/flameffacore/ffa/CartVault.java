@@ -1,6 +1,7 @@
 package dev.flamesentinell.flameffacore.ffa;
 
 import dev.flamesentinell.flameffacore.FlameFFACore;
+import dev.flamesentinell.flameffacore.util.Tasks;
 import io.papermc.paper.command.brigadier.BasicCommand;
 import io.papermc.paper.command.brigadier.CommandSourceStack;
 import io.papermc.paper.command.brigadier.Commands;
@@ -191,6 +192,11 @@ public final class CartVault implements Listener {
          return;
       }
 
+      if (Tasks.viewedFromOtherRegion(var2, null)) {
+         say(var1, "<red>Someone in another area is using that inventory, try again soon.");
+         return;
+      }
+
       this.save(var1);
       var1.openInventory(var2);
       var1.playSound(var1.getLocation(), Sound.BLOCK_CHEST_OPEN, 0.6F, 1.0F);
@@ -352,7 +358,12 @@ public final class CartVault implements Listener {
                   CartVault.say(var3, "<red>That player is not online.");
                } else {
                   try {
-                     var3.openInventory(CartVault.this.vault(var5));
+                     Inventory var7 = CartVault.this.vault(var5);
+                     if (Tasks.viewedFromOtherRegion(var7, var5)) {
+                        CartVault.say(var3, "<red>Someone in another area is using that inventory, try again soon.");
+                     } else {
+                        var3.openInventory(var7);
+                     }
                   } catch (IllegalStateException var6) {
                      CartVault.say(var3, "<red>That cart inventory could not be loaded.");
                   }

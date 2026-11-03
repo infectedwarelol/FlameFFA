@@ -9,7 +9,9 @@ import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.World;
 import org.bukkit.entity.Entity;
+import org.bukkit.entity.HumanEntity;
 import org.bukkit.event.player.PlayerTeleportEvent.TeleportCause;
+import org.bukkit.inventory.Inventory;
 import org.bukkit.plugin.Plugin;
 
 public final class Tasks {
@@ -149,6 +151,22 @@ public final class Tasks {
          entity.teleportAsync(to, cause);
       } else {
          entity.teleport(to, cause);
+      }
+   }
+
+   public static boolean viewedFromOtherRegion(Inventory inventory, Entity owner) {
+      if (!FOLIA) {
+         return false;
+      } else if (owner != null && !Bukkit.isOwnedByCurrentRegion(owner)) {
+         return true;
+      } else {
+         for (HumanEntity viewer : inventory.getViewers()) {
+            if (!Bukkit.isOwnedByCurrentRegion(viewer)) {
+               return true;
+            }
+         }
+
+         return false;
       }
    }
 

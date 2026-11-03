@@ -1,6 +1,7 @@
 package dev.flamesentinell.flameffacore.ffa;
 
 import dev.flamesentinell.flameffacore.FlameFFACore;
+import dev.flamesentinell.flameffacore.util.Tasks;
 import io.papermc.paper.command.brigadier.BasicCommand;
 import io.papermc.paper.command.brigadier.CommandSourceStack;
 import io.papermc.paper.command.brigadier.Commands;
@@ -162,7 +163,11 @@ public final class EnderVault implements Listener {
          }
 
          this.plugin.tasks().runOn(viewer, () -> {
-            if (viewer.isOnline()) {
+            if (!viewer.isOnline()) {
+               return;
+            } else if (Tasks.viewedFromOtherRegion(inventory, owner)) {
+               say(viewer, "<red>Someone in another area is using that inventory, try again soon.");
+            } else {
                viewer.openInventory(inventory);
             }
          });
@@ -173,7 +178,13 @@ public final class EnderVault implements Listener {
       OfflinePlayer var3 = Bukkit.getOfflinePlayerIfCached(var2);
       if (var3 != null && var3.getUniqueId() != null && (this.file(var3.getUniqueId()).exists() || this.open.containsKey(var3.getUniqueId()))) {
          try {
-            var1.openInventory(this.vault(var3.getUniqueId(), var2, null));
+            Inventory var4 = this.vault(var3.getUniqueId(), var2, null);
+            if (Tasks.viewedFromOtherRegion(var4, null)) {
+               say(var1, "<red>Someone in another area is using that inventory, try again soon.");
+               return;
+            }
+
+            var1.openInventory(var4);
             this.plugin.getLogger().info(var1.getName() + " opened the offline ender chest of " + var2);
          } catch (IllegalStateException var5) {
             say(var1, "<red>That ender chest could not be loaded.");
@@ -195,6 +206,11 @@ public final class EnderVault implements Listener {
          var2 = this.vault(var1);
       } catch (IllegalStateException var4) {
          say(var1, "<red>Your ender chest could not be loaded, tell staff.");
+         return;
+      }
+
+      if (Tasks.viewedFromOtherRegion(var2, null)) {
+         say(var1, "<red>Someone in another area is using that inventory, try again soon.");
          return;
       }
 
