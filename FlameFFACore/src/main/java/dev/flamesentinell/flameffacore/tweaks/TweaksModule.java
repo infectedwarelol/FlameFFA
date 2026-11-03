@@ -82,6 +82,17 @@ public final class TweaksModule implements Module, Listener {
          this.watch = null;
       }
 
+      for (UUID uuid : this.ghosts) {
+         Player player = Bukkit.getPlayer(uuid);
+         if (player != null) {
+            try {
+               this.unghost(player);
+            } catch (RuntimeException offThread) {
+               this.plugin.getSLF4JLogger().warn("could not reset the vanish flags of {}", player.getName());
+            }
+         }
+      }
+
       this.lastChat.clear();
       this.peeking.clear();
       this.ghosts.clear();
@@ -187,7 +198,10 @@ public final class TweaksModule implements Module, Listener {
    public void onQuit(PlayerQuitEvent event) {
       UUID uuid = event.getPlayer().getUniqueId();
       this.lastChat.remove(uuid);
-      this.ghosts.remove(uuid);
+      if (this.ghosts.remove(uuid)) {
+         this.unghost(event.getPlayer());
+      }
+
       this.peeking.remove(uuid);
    }
 
@@ -204,8 +218,9 @@ public final class TweaksModule implements Module, Listener {
             } else {
                OfflineInvsee.openOffline(viewer, args[0]);
             }
-         } else {
-            viewer.openInventory(enderChest ? target.getEnderChest() : target.getInventory());
+         } else if (!Bukkit.isOwnedByCurrentRegion(target)) {
+            sender.sendMessage("that player is too far away to view right now");
+         } else if (viewer.openInventory(enderChest ? target.getEnderChest() : target.getInventory()) != null) {
             this.peeking.add(viewer.getUniqueId());
             this.plugin.getSLF4JLogger().info("{} opened the {} of {}", viewer.getName(), enderChest ? "ender chest" : "inventory", target.getName());
          }
@@ -440,6 +455,18 @@ public final class TweaksModule implements Module, Listener {
       player.setCanPickupItems(!hidden);
       player.setSilent(hidden);
       player.sendActionBar(MM.deserialize(hidden ? "<gray>Vanished  <white>flying  invulnerable  hidden from players and tab" : "<gray>Visible again"));
+   }
+
+   private void unghost(Player player) {
+      if (player.getGameMode() == GameMode.SURVIVAL || player.getGameMode() == GameMode.ADVENTURE) {
+         player.setFlying(false);
+         player.setAllowFlight(false);
+      }
+
+      player.setInvulnerable(false);
+      player.setCollidable(true);
+      player.setCanPickupItems(true);
+      player.setSilent(false);
    }
 
    @EventHandler(

@@ -166,6 +166,10 @@ public final class TrimsModule implements Module, Listener {
    }
 
    private void open(Player player) {
+      if (player.getOpenInventory().getTopInventory().getHolder(false) instanceof TrimsModule.Menu) {
+         player.closeInventory();
+      }
+
       TrimsModule.Menu menu = new TrimsModule.Menu();
       Inventory inv = Bukkit.createInventory(menu, SIZE, this.mm.deserialize("<gradient:#ff7a18:#ffb347>Armor Trims</gradient>"));
       menu.inv = inv;

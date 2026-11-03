@@ -164,7 +164,6 @@ final class HoloCommand {
                   if (sender instanceof Player player) {
                      Location eyes = player.getEyeLocation();
                      eyes.setYaw(player.getYaw() + 180.0F);
-                     this.module.despawn(holo);
                      holo.at(eyes);
                      this.module.save();
                      this.module.redraw(holo);

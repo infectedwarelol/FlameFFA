@@ -223,7 +223,7 @@ final class Watch implements Listener {
    private void end(UUID uuid, String why) {
       int[] trap = this.pending.remove(uuid);
       Player player = Bukkit.getPlayer(uuid);
-      if (trap != null && player != null) {
+      if (trap != null && player != null && Bukkit.isOwnedByCurrentRegion(player)) {
          PlayerInventory inventory = player.getInventory();
          ItemStack moved = inventory.getItem(trap[0]);
          ItemStack swapped = inventory.getItem(trap[1]);

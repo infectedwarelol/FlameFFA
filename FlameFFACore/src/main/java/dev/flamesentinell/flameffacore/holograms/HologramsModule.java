@@ -313,7 +313,7 @@ public final class HologramsModule implements Module, Listener {
       if (holo.entity != null) {
          Entity entity = Bukkit.getEntity(holo.entity);
          if (entity != null) {
-            entity.remove();
+            this.plugin.tasks().runOn(entity, entity::remove);
          }
 
          holo.entity = null;
@@ -324,7 +324,7 @@ public final class HologramsModule implements Module, Listener {
       Location at = this.location(holo);
       if (at != null) {
          this.plugin.tasks().runAt(at, () -> {
-            if ((holo.entity == null ? null : Bukkit.getEntity(holo.entity)) instanceof TextDisplay display && display.isValid()) {
+            if ((holo.entity == null ? null : Bukkit.getEntity(holo.entity)) instanceof TextDisplay display && Bukkit.isOwnedByCurrentRegion(display) && display.isValid()) {
                Tasks.move(display, at);
                this.style(display, holo);
             } else {

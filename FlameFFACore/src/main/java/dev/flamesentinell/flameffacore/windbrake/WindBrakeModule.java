@@ -160,7 +160,7 @@ public final class WindBrakeModule implements Module, Listener {
       priority = EventPriority.LOWEST
    )
    public void onHit(ProjectileHitEvent event) {
-      if (!this.braked.isEmpty() && this.braked.contains(event.getEntity().getUniqueId())) {
+      if (!this.braked.isEmpty() && this.braked.remove(event.getEntity().getUniqueId())) {
          event.setCancelled(true);
          event.getEntity().remove();
       }
