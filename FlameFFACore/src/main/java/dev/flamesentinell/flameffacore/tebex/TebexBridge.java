@@ -23,13 +23,16 @@ public final class TebexBridge implements Listener {
    }
 
    public void grantKeys(CommandSender actor, String targetToken, String crateId, int amount, String txn) {
-      UUID target = this.resolve(targetToken);
-      if (target == null) {
-         actor.sendMessage(this.plugin.configs().msg("general.unknown-player", "name", targetToken));
-      } else if (this.plugin.crateRegistry().get(crateId) == null) {
+      if (this.plugin.crateRegistry().get(crateId) == null) {
          actor.sendMessage(this.plugin.configs().msg("crate.unknown", "crate", crateId));
       } else {
          this.plugin.async(() -> {
+            UUID target = this.resolve(targetToken);
+            if (target == null) {
+               this.plugin.sync(() -> actor.sendMessage(this.plugin.configs().msg("general.unknown-player", "name", targetToken)));
+               return;
+            }
+
             KeyStore.Result result = this.plugin.keys().grant(target, crateId, amount, "tebex", actor.getName(), txn);
             this.plugin.sync(() -> this.report(actor, target, result, amount + "x " + crateId + " key", txn));
          });
@@ -37,15 +40,18 @@ public final class TebexBridge implements Listener {
    }
 
    public void grantRank(CommandSender actor, String targetToken, String rankId, int days, String txn) {
-      UUID target = this.resolve(targetToken);
-      if (target == null) {
-         actor.sendMessage(this.plugin.configs().msg("general.unknown-player", "name", targetToken));
-      } else if (this.plugin.ranks().rank(rankId) == null) {
+      if (this.plugin.ranks().rank(rankId) == null) {
          actor.sendMessage(this.plugin.configs().msg("general.usage", "usage", "unknown rank " + rankId));
       } else {
          this.plugin
             .async(
                () -> {
+                  UUID target = this.resolve(targetToken);
+                  if (target == null) {
+                     this.plugin.sync(() -> actor.sendMessage(this.plugin.configs().msg("general.unknown-player", "name", targetToken)));
+                     return;
+                  }
+
                   boolean owned = this.plugin.txns().claim(txn, "rank", target, rankId + " " + days + "d");
                   if (!owned) {
                      this.plugin.sync(() -> actor.sendMessage(this.plugin.configs().msg("tebex.duplicate-txn", "txn", String.valueOf(txn))));

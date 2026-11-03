@@ -100,10 +100,17 @@ public final class EnderVault implements Listener {
          EnderVault.Holder var5 = new EnderVault.Holder(var1);
          var4 = Bukkit.createInventory(var5, 54, MiniMessage.miniMessage().deserialize("Ender Chest"));
          var5.inventory = var4;
-         File var6 = this.file(var1);
-         if (var6.exists()) {
+         byte[] var6;
+         try {
+            var6 = this.read(this.file(var1));
+         } catch (Exception var9) {
+            this.plugin.getLogger().severe("ender vault of " + var2 + " could not be read  " + var9);
+            throw new IllegalStateException("ender vault unreadable", var9);
+         }
+
+         if (var6 != null) {
             try {
-               ItemStack[] var11 = ItemStack.deserializeItemsFromBytes(Files.readAllBytes(var6.toPath()));
+               ItemStack[] var11 = ItemStack.deserializeItemsFromBytes(var6);
 
                for (int var12 = 0; var12 < var11.length && var12 < 54; var12++) {
                   if (var11[var12] != null && !var11[var12].getType().isAir()) {
@@ -140,6 +147,28 @@ public final class EnderVault implements Listener {
       }
    }
 
+   private byte[] read(File file) throws Exception {
+      return this.io.submit(() -> file.exists() ? Files.readAllBytes(file.toPath()) : null).get(10L, TimeUnit.SECONDS);
+   }
+
+   private void showOther(Player viewer, Player owner) {
+      this.plugin.tasks().runOn(owner, () -> {
+         Inventory inventory;
+         try {
+            inventory = this.vault(owner);
+         } catch (IllegalStateException unreadable) {
+            say(viewer, "<red>That ender chest could not be loaded.");
+            return;
+         }
+
+         this.plugin.tasks().runOn(viewer, () -> {
+            if (viewer.isOnline()) {
+               viewer.openInventory(inventory);
+            }
+         });
+      });
+   }
+
    private void showOffline(Player var1, String var2) {
       OfflinePlayer var3 = Bukkit.getOfflinePlayerIfCached(var2);
       if (var3 != null && var3.getUniqueId() != null && (this.file(var3.getUniqueId()).exists() || this.open.containsKey(var3.getUniqueId()))) {
@@ -150,7 +179,7 @@ public final class EnderVault implements Listener {
             say(var1, "<red>That ender chest could not be loaded.");
          }
       } else {
-         say(var1, "<red>" + var2 + " has no ender chest saved yet.");
+         say(var1, "<red>" + MiniMessage.miniMessage().escapeTags(var2) + " has no ender chest saved yet.");
       }
    }
 
@@ -310,13 +339,7 @@ public final class EnderVault implements Listener {
 
          Player var7 = var6;
          if (var7 != null && var7 != var2) {
-            this.plugin.tasks().entity(var2, () -> {
-               try {
-                  var2.openInventory(this.vault(var7));
-               } catch (IllegalStateException var4) {
-                  say(var2, "<red>That ender chest could not be loaded.");
-               }
-            });
+            this.plugin.tasks().entity(var2, () -> this.showOther(var2, var7));
          } else {
             this.plugin.tasks().entity(var2, () -> this.show(var2));
          }
@@ -371,7 +394,7 @@ public final class EnderVault implements Listener {
                if (var5 == null) {
                   EnderVault.this.showOffline(var3, var2[0]);
                } else {
-                  var3.openInventory(EnderVault.this.vault(var5));
+                  EnderVault.this.showOther(var3, var5);
                }
             } else if (EnderVault.this.plugin.arena().inCombat(var3)) {
                EnderVault.say(var3, "<red>You can not open your ender chest in combat.");

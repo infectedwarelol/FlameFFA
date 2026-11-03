@@ -453,7 +453,7 @@ public final class VillagerService implements Listener {
          int rebuilt = 0;
 
          for (VillagerStore.Row row : this.plugin.villagerStore().loadAll()) {
-            if (this.presets.containsKey(row.preset())) {
+            if (this.presets.containsKey(row.preset()) && row.location() != null && row.location().getWorld() != null) {
                row.location().getChunk().load();
                if (this.restoreOne(row)) {
                   rebuilt++;

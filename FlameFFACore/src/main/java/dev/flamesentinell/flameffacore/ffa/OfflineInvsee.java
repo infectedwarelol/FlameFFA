@@ -96,8 +96,9 @@ public final class OfflineInvsee implements Listener {
       }
    }
 
-   private void showOffline(Player var1, String var2) {
-      OfflinePlayer var3 = Bukkit.getOfflinePlayerIfCached(var2);
+   private void showOffline(Player var1, String var8) {
+      String var2 = MiniMessage.miniMessage().escapeTags(var8);
+      OfflinePlayer var3 = Bukkit.getOfflinePlayerIfCached(var8);
       if (var3 != null && var3.hasPlayedBefore()) {
          UUID var4 = var3.getUniqueId();
          Inventory var5 = this.open.get(var4);
@@ -105,7 +106,7 @@ public final class OfflineInvsee implements Listener {
             var1.openInventory(var5);
          } else {
             File var6 = this.file(var4);
-            String var19 = var3.getName() != null ? var3.getName() : var2;
+            String var19 = var3.getName() != null ? var3.getName() : var8;
             this.plugin.async(() -> {
                Map var7;
                try {
@@ -198,7 +199,7 @@ public final class OfflineInvsee implements Listener {
       OfflineInvsee.Holder var2 = holder(var1.getView().getTopInventory());
       if (var2 != null) {
          boolean var3 = var1.getRawSlot() >= 0 && var1.getRawSlot() < 45;
-         if (var2.readOnly || var3 && filler(var1.getRawSlot()) || !var3 && var1.isShiftClick()) {
+         if (var2.readOnly || Bukkit.getPlayer(var2.owner) != null || var3 && filler(var1.getRawSlot()) || !var3 && var1.isShiftClick()) {
             var1.setCancelled(true);
          }
       }
@@ -210,7 +211,7 @@ public final class OfflineInvsee implements Listener {
    public void onDrag(InventoryDragEvent var1) {
       OfflineInvsee.Holder var2 = holder(var1.getView().getTopInventory());
       if (var2 != null) {
-         if (var2.readOnly || var1.getRawSlots().stream().anyMatch(var0 -> var0 < 45 && filler(var0))) {
+         if (var2.readOnly || Bukkit.getPlayer(var2.owner) != null || var1.getRawSlots().stream().anyMatch(var0 -> var0 < 45 && filler(var0))) {
             var1.setCancelled(true);
          }
       }
@@ -225,7 +226,7 @@ public final class OfflineInvsee implements Listener {
             if (!var2.readOnly) {
                if (Bukkit.getPlayer(var2.owner) != null) {
                   if (var1.getPlayer() instanceof Player var5) {
-                     say(var5, "<red>" + var2.name + " came online, changes were not saved.");
+                     say(var5, "<red>" + MiniMessage.miniMessage().escapeTags(var2.name) + " came online, changes were not saved.");
                   }
                } else {
                   this.save(var2, var1.getInventory(), var1.getPlayer() instanceof Player var3 ? var3 : null);
@@ -288,7 +289,7 @@ public final class OfflineInvsee implements Listener {
       } catch (Exception var14) {
          this.plugin.getLogger().warning("offline invsee save of " + var1.name + " failed  " + var14);
          if (var3 != null) {
-            say(var3, "<red>Could not save " + var1.name + "'s inventory.");
+            say(var3, "<red>Could not save " + MiniMessage.miniMessage().escapeTags(var1.name) + "'s inventory.");
          }
       }
    }

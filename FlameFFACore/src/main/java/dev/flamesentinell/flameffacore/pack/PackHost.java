@@ -13,6 +13,7 @@ import java.nio.file.Files;
 import java.security.MessageDigest;
 import java.util.HexFormat;
 import java.util.UUID;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import net.kyori.adventure.resource.ResourcePackInfo;
 import net.kyori.adventure.resource.ResourcePackInfoLike;
@@ -26,6 +27,7 @@ import org.bukkit.event.player.PlayerJoinEvent;
 public final class PackHost implements Listener {
    private final FlameFFACore plugin;
    private HttpServer server;
+   private ExecutorService workers;
    private byte[] data;
    private String sha1;
    private UUID packId;
@@ -50,11 +52,12 @@ public final class PackHost implements Listener {
                this.url = "http://" + host + ":" + port + path;
                this.server = HttpServer.create(new InetSocketAddress(cfg.getString("resource-pack.bind", "0.0.0.0"), port), 16);
                this.server.createContext("/pack/", ex -> this.serve(ex, path));
-               this.server.setExecutor(Executors.newFixedThreadPool(2, r -> {
+               this.workers = Executors.newFixedThreadPool(2, r -> {
                   Thread t = new Thread(r, "flameffa-pack");
                   t.setDaemon(true);
                   return t;
-               }));
+               });
+               this.server.setExecutor(this.workers);
                this.server.start();
                this.plugin.getSLF4JLogger().info("resource pack {} ({} bytes) served at {}", new Object[]{this.sha1, this.data.length, this.url});
             } catch (Exception var6) {
@@ -138,6 +141,11 @@ public final class PackHost implements Listener {
       if (this.server != null) {
          this.server.stop(0);
          this.server = null;
+      }
+
+      if (this.workers != null) {
+         this.workers.shutdownNow();
+         this.workers = null;
       }
    }
 

@@ -188,17 +188,27 @@ public final class CrateService implements Listener {
          var1.sendMessage(Text.parse("<gray>Wait for your crate to finish rolling."));
       } else {
          UUID var3 = var1.getUniqueId();
+         String var5 = var1.getName();
          this.plugin.async(() -> {
-            KeyStore.Result var4 = this.plugin.keys().spend(var3, var2.id(), 1, "crate_open", var1.getName());
-            this.plugin.sync(var1, () -> {
-               if (var4 != KeyStore.Result.OK) {
+            KeyStore.Result var4 = this.plugin.keys().spend(var3, var2.id(), 1, "crate_open", var5);
+            if (var4 != KeyStore.Result.OK) {
+               this.busy.remove(var3);
+               this.plugin.sync(var1, () -> var1.sendMessage(this.plugin.configs().msg("keys.not-enough", "crate", var2.id())));
+            } else if (!this.plugin.isEnabled()
+               || var1.getScheduler().run(this.plugin, var6 -> this.reward(var1, var2), () -> {
                   this.busy.remove(var3);
-                  var1.sendMessage(this.plugin.configs().msg("keys.not-enough", "crate", var2.id()));
-               } else {
-                  this.reward(var1, var2);
-               }
-            });
+                  this.plugin.async(() -> this.refundKey(var3, var2, var5));
+               }) == null) {
+               this.busy.remove(var3);
+               this.refundKey(var3, var2, var5);
+            }
          });
+      }
+   }
+
+   private void refundKey(UUID player, Crate crate, String name) {
+      if (this.plugin.keys().grant(player, crate.id(), 1, "crate_refund", name, null) != KeyStore.Result.OK) {
+         this.plugin.getSLF4JLogger().error("could not refund a {} key to {} {}", new Object[]{crate.id(), name, player});
       }
    }
 
@@ -286,6 +296,11 @@ public final class CrateService implements Listener {
          this.busy.remove(var1.getUniqueId());
          if (var3 != null) {
             this.grant(var1, var2, var3);
+         } else {
+            UUID var10 = var1.getUniqueId();
+            String var11 = var1.getName();
+            this.plugin.async(() -> this.refundKey(var10, var2, var11));
+            var1.sendMessage(this.plugin.configs().msg("crate.no-loot", "crate", var2.id()));
          }
       }
    }
@@ -415,25 +430,41 @@ public final class CrateService implements Listener {
          } else {
             int var7 = this.plugin.items().takeTokens(var1, var5);
             if (var7 < var5) {
-               var1.getInventory().addItem(new ItemStack[]{this.plugin.items().mintKillTokens(var7)});
+               if (var7 > 0) {
+                  this.giveTokens(var1, var7);
+               }
+
                var1.sendMessage(this.plugin.configs().msg("crate.not-enough-tokens", "cost", String.valueOf(var5), "held", String.valueOf(var7)));
             } else {
                UUID var8 = var1.getUniqueId();
                this.plugin
                   .async(
                      () -> {
-                        this.plugin.keys().grant(var8, var2.id(), var3, "token_purchase", var1.getName(), null);
+                        KeyStore.Result var9 = this.plugin.keys().grant(var8, var2.id(), var3, "token_purchase", var1.getName(), null);
                         this.plugin
                            .sync(
                               var1,
-                              () -> var1.sendMessage(
-                                 this.plugin.configs().msg("crate.bought", "amount", String.valueOf(var3), "crate", var2.id(), "cost", String.valueOf(var5))
-                              )
+                              () -> {
+                                 if (var9 != KeyStore.Result.OK) {
+                                    this.giveTokens(var1, var5);
+                                    var1.sendMessage(this.plugin.configs().msg("crate.save-failed", "crate", var2.id()));
+                                 } else {
+                                    var1.sendMessage(
+                                       this.plugin.configs().msg("crate.bought", "amount", String.valueOf(var3), "crate", var2.id(), "cost", String.valueOf(var5))
+                                    );
+                                 }
+                              }
                            );
                      }
                   );
             }
          }
+      }
+   }
+
+   private void giveTokens(Player player, int amount) {
+      for (ItemStack leftover : player.getInventory().addItem(new ItemStack[]{this.plugin.items().mintKillTokens(amount)}).values()) {
+         player.getWorld().dropItemNaturally(player.getLocation(), leftover);
       }
    }
 

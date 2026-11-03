@@ -348,13 +348,15 @@ public final class ArenaService implements Listener {
             this.plugin.hud().onKill(var12, var7);
             this.plugin.cosmetics().onKill(var12, var2.getLocation());
             int var8 = this.plugin.configs().main().getInt("tokens.per-kill", 1);
-            if (var8 > 0) {
-               for (ItemStack var10 : var12.getInventory().addItem(new ItemStack[]{this.plugin.items().mintKillTokens(var8)}).values()) {
-                  var12.getWorld().dropItemNaturally(var12.getLocation(), var10);
+            this.plugin.tasks().runOn(var12, () -> {
+               if (var8 > 0) {
+                  for (ItemStack var10 : var12.getInventory().addItem(new ItemStack[]{this.plugin.items().mintKillTokens(var8)}).values()) {
+                     var12.getWorld().dropItemNaturally(var12.getLocation(), var10);
+                  }
                }
-            }
 
-            var12.setHealth(Math.min(var12.getMaxHealth(), var12.getHealth() + 4.0));
+               var12.setHealth(Math.min(var12.getMaxHealth(), var12.getHealth() + 4.0));
+            });
             if (var11 >= 5) {
                Bukkit.broadcast(
                   this.plugin.configs().msg("arena.streak-ended", "killer", var12.getName(), "victim", var2.getName(), "streak", String.valueOf(var11))

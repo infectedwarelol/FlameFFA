@@ -110,7 +110,7 @@ public final class Safezone {
          for (UUID uuid : new ArrayList<>(this.inside)) {
             Player p = this.plugin.getServer().getPlayer(uuid);
             if (p != null) {
-               this.strip(p);
+               this.plugin.tasks().runOn(p, () -> this.strip(p));
             }
          }
 

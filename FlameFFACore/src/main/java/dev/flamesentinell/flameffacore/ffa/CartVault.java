@@ -141,10 +141,17 @@ public final class CartVault implements Listener {
          CartVault.Holder var4 = new CartVault.Holder(var2);
          var3 = Bukkit.createInventory(var4, 27, MiniMessage.miniMessage().deserialize("Cart Inventory"));
          var4.inventory = var3;
-         File var5 = this.file(var2);
-         if (var5.exists()) {
+         byte[] var5;
+         try {
+            var5 = this.read(this.file(var2));
+         } catch (Exception var8) {
+            this.plugin.getLogger().severe("cart vault of " + var1.getName() + " could not be read  " + var8);
+            throw new IllegalStateException("cart vault unreadable", var8);
+         }
+
+         if (var5 != null) {
             try {
-               ItemStack[] var6 = ItemStack.deserializeItemsFromBytes(Files.readAllBytes(var5.toPath()));
+               ItemStack[] var6 = ItemStack.deserializeItemsFromBytes(var5);
 
                for (int var7 = 0; var7 < var6.length && var7 < 27; var7++) {
                   if (var6[var7] != null && !var6[var7].getType().isAir()) {
@@ -171,6 +178,10 @@ public final class CartVault implements Listener {
       }
    }
 
+   private byte[] read(File file) throws Exception {
+      return this.io.submit(() -> file.exists() ? Files.readAllBytes(file.toPath()) : null).get(10L, TimeUnit.SECONDS);
+   }
+
    private void show(Player var1) {
       Inventory var2;
       try {
@@ -192,7 +203,7 @@ public final class CartVault implements Listener {
          this.dirty.remove(var2);
          byte[] var4 = ItemStack.serializeItemsAsBytes(var3.getContents());
          if (var1.isOnline()) {
-            var1.saveData();
+            this.plugin.tasks().runOn(var1, var1::saveData);
          }
 
          File var5 = this.file(var2);
@@ -340,7 +351,11 @@ public final class CartVault implements Listener {
                if (var5 == null) {
                   CartVault.say(var3, "<red>That player is not online.");
                } else {
-                  var3.openInventory(CartVault.this.vault(var5));
+                  try {
+                     var3.openInventory(CartVault.this.vault(var5));
+                  } catch (IllegalStateException var6) {
+                     CartVault.say(var3, "<red>That cart inventory could not be loaded.");
+                  }
                }
             } else if (!CartVault.this.unlocked(var3)) {
                CartVault.say(var3, "<red>The cart inventory comes with the Spear Cart Demon unlock.");

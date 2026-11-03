@@ -18,16 +18,17 @@ import org.bukkit.persistence.PersistentDataType;
 public final class KitService {
    private static final int INVENTORY_SLOTS = 41;
    private final FlameFFACore plugin;
-   private final Map<String, RankKit> kits = new LinkedHashMap<>();
+   private volatile Map<String, RankKit> kits = new LinkedHashMap<>();
 
    public KitService(FlameFFACore var1) {
       this.plugin = var1;
    }
 
    public void load() {
-      this.kits.clear();
-      this.plugin.blobs().loadAll("rankkit").forEach((var1, var2) -> this.kits.put(var1, new RankKit(var1, var2.contents(), var2.setBy(), var2.setAt())));
-      this.plugin.getSLF4JLogger().info("loaded {} rank kits", this.kits.size());
+      Map<String, RankKit> var1 = new LinkedHashMap<>();
+      this.plugin.blobs().loadAll("rankkit").forEach((var2, var3) -> var1.put(var2, new RankKit(var2, var3.contents(), var3.setBy(), var3.setAt())));
+      this.kits = var1;
+      this.plugin.getSLF4JLogger().info("loaded {} rank kits", var1.size());
    }
 
    public RankKit get(String var1) {
@@ -55,14 +56,23 @@ public final class KitService {
 
       boolean var7 = this.plugin.blobs().save("rankkit", var2.id(), var4, var1.getName());
       if (var7) {
-         this.kits.put(var2.id(), new RankKit(var2.id(), var4, var1.getName(), System.currentTimeMillis()));
+         synchronized (this) {
+            Map<String, RankKit> var8 = new LinkedHashMap<>(this.kits);
+            var8.put(var2.id(), new RankKit(var2.id(), var4, var1.getName(), System.currentTimeMillis()));
+            this.kits = var8;
+         }
       }
 
       return var7;
    }
 
    public boolean clear(String var1) {
-      this.kits.remove(var1);
+      synchronized (this) {
+         Map<String, RankKit> var2 = new LinkedHashMap<>(this.kits);
+         var2.remove(var1);
+         this.kits = var2;
+      }
+
       return this.plugin.blobs().delete("rankkit", var1);
    }
 
