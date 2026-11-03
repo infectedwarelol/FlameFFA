@@ -517,7 +517,7 @@ public final class CometSpear implements CustomWeapon, Listener {
       world.playSound(at, Sound.BLOCK_AMETHYST_BLOCK_CHIME, 0.8F, 0.7F);
       if (!(damage <= 0.0)) {
          for (LivingEntity hit : world.getNearbyLivingEntities(at, blast, blast, blast)) {
-            if (hit instanceof Player victim && !victim.equals(caster) && !victim.isDead()) {
+            if (hit instanceof Player victim && !victim.equals(caster) && !victim.isDead() && !this.plugin.safezone().contains(victim.getLocation())) {
                if (caster == null) {
                   victim.damage(damage);
                } else {
