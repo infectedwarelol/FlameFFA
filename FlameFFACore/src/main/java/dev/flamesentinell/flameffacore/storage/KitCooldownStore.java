@@ -41,7 +41,11 @@ public final class KitCooldownStore {
    }
 
    public void forget(UUID uuid) {
-      this.cache.remove(uuid);
+      long now = System.currentTimeMillis();
+      this.cache.computeIfPresent(uuid, (key, mine) -> {
+         mine.values().removeIf(until -> until <= now);
+         return mine.isEmpty() ? null : mine;
+      });
    }
 
    public long remaining(UUID uuid, String rankId) {
@@ -64,12 +68,24 @@ public final class KitCooldownStore {
       }
    }
 
-   public void start(UUID uuid, String rankId, long seconds) {
-      if (seconds > 0L) {
+   public long mark(UUID uuid, String rankId, long seconds) {
+      if (seconds <= 0L) {
+         return 0L;
+      } else {
          long until = System.currentTimeMillis() + seconds * 1000L;
          this.cache.computeIfAbsent(uuid, k -> new ConcurrentHashMap<>()).put(rankId, until);
+         return until;
+      }
+   }
+
+   public void persist(UUID uuid, String rankId, long until) {
+      if (until > 0L) {
          this.write(uuid, rankId, until);
       }
+   }
+
+   public void start(UUID uuid, String rankId, long seconds) {
+      this.persist(uuid, rankId, this.mark(uuid, rankId, seconds));
    }
 
    private void write(UUID uuid, String rankId, long until) {

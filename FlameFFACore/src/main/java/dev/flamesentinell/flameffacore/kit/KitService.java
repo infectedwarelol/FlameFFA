@@ -150,8 +150,8 @@ public final class KitService {
       if (var2.cooldownSeconds() > 0 && !var1.hasPermission("flameffacore.kit.nocooldown")) {
          UUID var3 = var1.getUniqueId();
          String var4 = var2.id();
-         long var5 = var2.cooldownSeconds();
-         this.plugin.async(() -> this.plugin.kitCooldowns().start(var3, var4, var5));
+         long var6 = this.plugin.kitCooldowns().mark(var3, var4, var2.cooldownSeconds());
+         this.plugin.async(() -> this.plugin.kitCooldowns().persist(var3, var4, var6));
       }
    }
 
