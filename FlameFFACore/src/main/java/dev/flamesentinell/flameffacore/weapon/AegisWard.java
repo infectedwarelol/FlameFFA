@@ -15,6 +15,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.UUID;
 import java.util.Map.Entry;
 import java.util.concurrent.ThreadLocalRandom;
+import java.util.concurrent.atomic.AtomicBoolean;
 import javax.imageio.ImageIO;
 import net.kyori.adventure.key.Key;
 import net.kyori.adventure.text.Component;
@@ -54,6 +55,7 @@ public final class AegisWard {
    private static final String RUNE_LETTERS = "abcdefghijklmnopqrstuvwxyz";
    private volatile List<double[]> sigilPoints = List.of();
    private volatile int sigilGrid = -1;
+   private final AtomicBoolean sigilLoading = new AtomicBoolean();
    private final FlameFFACore plugin;
    private final String path;
    private final Map<UUID, AegisWard.Live> live = new ConcurrentHashMap<>();
@@ -478,9 +480,25 @@ public final class AegisWard {
       return out;
    }
 
+   private int sigilGridWanted() {
+      return Math.max(8, Math.min(48, this.whole("sigil-grid", 26)));
+   }
+
    private List<double[]> sigilPoints() {
-      int grid = Math.max(8, Math.min(48, this.whole("sigil-grid", 26)));
-      return grid == this.sigilGrid ? this.sigilPoints : this.loadSigil(grid);
+      int grid = this.sigilGridWanted();
+      if (grid != this.sigilGrid && this.sigilLoading.compareAndSet(false, true)) {
+         if (this.plugin.tasks().async(() -> {
+            try {
+               this.loadSigil(grid);
+            } finally {
+               this.sigilLoading.set(false);
+            }
+         }) == null) {
+            this.sigilLoading.set(false);
+         }
+      }
+
+      return this.sigilPoints;
    }
 
    private synchronized List<double[]> loadSigil(int grid) {
@@ -556,7 +574,7 @@ public final class AegisWard {
    }
 
    public int sigilCount() {
-      return this.sigilPoints().size();
+      return this.loadSigil(this.sigilGridWanted()).size();
    }
 
    private void sigil(AegisWard.Live ward, World world, Location centre, float yaw, double reach, boolean bloom) {
