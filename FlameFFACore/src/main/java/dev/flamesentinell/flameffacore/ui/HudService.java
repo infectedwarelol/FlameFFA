@@ -312,7 +312,7 @@ public final class HudService implements Listener {
 
       Objective var6 = var1.getObjective("flamehp");
       if (var6 != null) {
-         var6.getScore(var2.getName()).setScore((int)Math.ceil(var2.getHealth()));
+         var6.getScore(var2.getName()).setScore(hearts(var2));
       }
    }
 
@@ -363,9 +363,13 @@ public final class HudService implements Listener {
       }
    }
 
+   private static int hearts(Player player) {
+      return (int)Math.ceil((player.getHealth() + player.getAbsorptionAmount()) / 2.0);
+   }
+
    private void pushHealth(Player var2) {
       if (!Tasks.FOLIA) {
-         int var3 = (int)Math.ceil(var2.getHealth());
+         int var3 = hearts(var2);
          Integer var4 = this.shownHealth.put(var2.getUniqueId(), var3);
          if (var4 == null || var4 != var3) {
             for (HudService.Session var6 : this.sessions.values()) {
