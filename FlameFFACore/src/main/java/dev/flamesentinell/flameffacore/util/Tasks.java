@@ -4,6 +4,7 @@ import io.papermc.paper.threadedregions.scheduler.ScheduledTask;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
@@ -16,7 +17,6 @@ import org.bukkit.plugin.Plugin;
 
 public final class Tasks {
    public static final boolean FOLIA = detectFolia();
-   private static final int PRUNE_THRESHOLD = 256;
    private final Plugin plugin;
    private final Set<ScheduledTask> repeating = ConcurrentHashMap.newKeySet();
 
@@ -41,13 +41,14 @@ public final class Tasks {
       if (task == null) {
          return null;
       } else {
-         if (this.repeating.size() >= PRUNE_THRESHOLD) {
-            this.repeating.removeIf(ScheduledTask::isCancelled);
-         }
-
+         this.repeating.removeIf(Tasks::done);
          this.repeating.add(task);
          return task;
       }
+   }
+
+   private static boolean done(ScheduledTask task) {
+      return task.isCancelled() || task.getExecutionState() == ScheduledTask.ExecutionState.FINISHED;
    }
 
    private boolean live() {
@@ -77,9 +78,23 @@ public final class Tasks {
    }
 
    public ScheduledTask entityTimer(Entity entity, Consumer<ScheduledTask> action, Runnable retired, long delayTicks, long periodTicks) {
-      return !this.live() || entity == null
-         ? null
-         : this.track(entity.getScheduler().runAtFixedRate(this.plugin, action, retired, atLeastOne(delayTicks), atLeastOne(periodTicks)));
+      if (!this.live() || entity == null) {
+         return null;
+      }
+
+      AtomicReference<ScheduledTask> scheduled = new AtomicReference<>();
+      ScheduledTask task = entity.getScheduler().runAtFixedRate(this.plugin, action, () -> {
+         ScheduledTask own = scheduled.get();
+         if (own != null) {
+            this.repeating.remove(own);
+         }
+
+         if (retired != null) {
+            retired.run();
+         }
+      }, atLeastOne(delayTicks), atLeastOne(periodTicks));
+      scheduled.set(task);
+      return this.track(task);
    }
 
    public void runOn(Entity entity, Runnable action) {
