@@ -33,8 +33,10 @@ import org.bukkit.event.entity.EntityDamageEvent.DamageCause;
 import org.bukkit.event.player.PlayerInteractAtEntityEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerItemDamageEvent;
+import org.bukkit.event.player.PlayerItemHeldEvent;
 import org.bukkit.event.player.PlayerMoveEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
+import org.bukkit.event.player.PlayerSwapHandItemsEvent;
 import org.bukkit.inventory.EquipmentSlot;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.PlayerInventory;
@@ -239,20 +241,39 @@ public final class WeaponRegistry implements Listener {
       UUID uuid = player.getUniqueId();
       WeaponRegistry.Hold hold = this.holds.get(uuid);
       if (hold != null) {
-         int now = Bukkit.getCurrentTick();
-         boolean released = hold.charges ? now - hold.started > 2 && !player.isHandRaised() : now - hold.lastClick > 6;
-         boolean maxed = now - hold.started >= hold.weapon.maxHoldTicks(this.plugin);
-         if ((released || maxed || player.isDead() || player.isOnGround()) && this.holds.remove(uuid, hold)) {
-            if (hold.weapon.onRelease(this.plugin, player, !player.isDead())) {
-               this.exempt(player);
-               this.startCooldown(player, hold.weapon);
-            }
-         }
+         this.checkHold(player, hold);
       }
 
       if (this.fallImmune.contains(uuid) && (player.isOnGround() || player.isInWater())) {
          this.fallImmune.remove(uuid);
       }
+   }
+
+   private void checkHold(Player player, WeaponRegistry.Hold hold) {
+      int now = Bukkit.getCurrentTick();
+      boolean released = hold.charges ? now - hold.started > 2 && !player.isHandRaised() : now - hold.lastClick > 6;
+      boolean maxed = now - hold.started >= hold.weapon.maxHoldTicks(this.plugin);
+      if (released || maxed || player.isDead() || player.isOnGround()) {
+         this.releaseHold(player, hold);
+      }
+   }
+
+   private void releaseHold(Player player, WeaponRegistry.Hold hold) {
+      if (this.holds.remove(player.getUniqueId(), hold) && hold.weapon.onRelease(this.plugin, player, !player.isDead())) {
+         this.exempt(player);
+         this.startCooldown(player, hold.weapon);
+      }
+   }
+
+   private void watchHold(Player player, WeaponRegistry.Hold hold) {
+      UUID uuid = player.getUniqueId();
+      this.plugin.tasks().entityTimer(player, task -> {
+         if (this.holds.get(uuid) != hold) {
+            task.cancel();
+         } else {
+            this.checkHold(player, hold);
+         }
+      }, () -> this.holds.remove(uuid, hold), 1L, 1L);
    }
 
    public void shutdown() {
@@ -307,7 +328,9 @@ public final class WeaponRegistry implements Listener {
                            var1.setCancelled(true);
                         }
 
-                        this.holds.put(var4.getUniqueId(), new WeaponRegistry.Hold(var3, Bukkit.getCurrentTick(), var15));
+                        WeaponRegistry.Hold var16 = new WeaponRegistry.Hold(var3, Bukkit.getCurrentTick(), var15);
+                        this.holds.put(var4.getUniqueId(), var16);
+                        this.watchHold(var4, var16);
                      } else {
                         long var10 = this.cooldownLeft(var4, var3, "ground");
                         if (var10 == 0L && var3.onAbility(this.plugin, var4, var2)) {
@@ -367,10 +390,7 @@ public final class WeaponRegistry implements Listener {
    public void onStopUsing(PlayerStopUsingItemEvent var1) {
       WeaponRegistry.Hold var2 = this.holds.get(var1.getPlayer().getUniqueId());
       if (var2 != null && var2.charges && var1.getTicksHeldFor() >= 2) {
-         this.holds.remove(var1.getPlayer().getUniqueId());
-         if (var2.weapon.onRelease(this.plugin, var1.getPlayer(), true)) {
-            this.startCooldown(var1.getPlayer(), var2.weapon);
-         }
+         this.releaseHold(var1.getPlayer(), var2);
       }
    }
 
@@ -398,6 +418,28 @@ public final class WeaponRegistry implements Listener {
    public void onFall(EntityDamageEvent var1) {
       if (var1.getCause() == DamageCause.FALL && var1.getEntity() instanceof Player var2 && this.fallImmune.remove(var2.getUniqueId())) {
          var1.setCancelled(true);
+      }
+   }
+
+   @EventHandler(
+      priority = EventPriority.MONITOR,
+      ignoreCancelled = true
+   )
+   public void onHeldSwap(PlayerItemHeldEvent var1) {
+      WeaponRegistry.Hold var2 = this.holds.get(var1.getPlayer().getUniqueId());
+      if (var2 != null) {
+         this.releaseHold(var1.getPlayer(), var2);
+      }
+   }
+
+   @EventHandler(
+      priority = EventPriority.MONITOR,
+      ignoreCancelled = true
+   )
+   public void onHandSwap(PlayerSwapHandItemsEvent var1) {
+      WeaponRegistry.Hold var2 = this.holds.get(var1.getPlayer().getUniqueId());
+      if (var2 != null) {
+         this.releaseHold(var1.getPlayer(), var2);
       }
    }
 

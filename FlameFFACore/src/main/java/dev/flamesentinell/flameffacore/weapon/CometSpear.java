@@ -90,7 +90,7 @@ public final class CometSpear implements CustomWeapon, Listener {
 
    @Override
    public int maxHoldTicks(FlameFFACore plugin) {
-      return Math.max(5, Math.min(40, plugin.configs().main().getInt(this.path() + ".hover-ticks", 30)));
+      return Math.max(5, Math.min(40, plugin.configs().main().getInt(this.path() + ".hover-ticks", 40)));
    }
 
    @Override

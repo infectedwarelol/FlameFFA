@@ -312,7 +312,7 @@ weapons:
     cooldown-seconds: 20
     ground-cooldown-seconds: 20
     # ticks you can hang in the air aiming before it launches on its own, 40 is the most it allows
-    hover-ticks: 30
+    hover-ticks: 40
     # the spear winds up in your hand the whole time you hang, so the thrust is ready on landing
     # off goes back to a dead hold, use that if the vanilla wind up ever cuts the hover short
     charge-while-hovering: true
